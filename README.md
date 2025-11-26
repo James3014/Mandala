@@ -20,7 +20,14 @@ Mandala/
    ```bash
    pytest
    ```
-4. 啟動前後端整合伺服器：
+4. 設定分類器：
+   - **預設**：若未設定任何 API Key，會使用關鍵字 rule-based 分類（精度較低）。
+   - **啟用 Gemini**：在環境變數加入 `GEMINI_API_KEY=<your-key>`，程式會自動改用 Gemini 1.5 Flash 處理分類。範例：
+     ```bash
+     export GEMINI_API_KEY=your_key_here
+     ```
+
+5. 啟動前後端整合伺服器：
    ```bash
    PORT=8000 python3 serve.py
    ```
@@ -28,7 +35,7 @@ Mandala/
    - `/api/grids`、`/api/grids/{id}`、`/api/segments`、`/api/segments/{id}/log` 直接呼叫 `LinusService`。
    - `frontend/index.html` 會自動呼叫上述 API；若後端沒開，畫面會改用內建 fallback 資料。
 
-5. 貼逐字稿：向 `/api/segments` `POST` 段落即可，即時看到九宮格更新。可用 curl 或直接在 Python 互動式 shell 呼叫 `LinusService.post_segments()`。
+6. 貼逐字稿：向 `/api/segments` `POST` 段落即可，即時看到九宮格更新。可用 curl 或直接在 Python 互動式 shell 呼叫 `LinusService.post_segments()`。
    - 網頁上也提供貼文表單：輸入來源、貼上逐字稿（空白行分段），按「送出並分類」即會呼叫 `/api/segments`；成功後畫面會跳出提示並以藍色高亮最新的格子與段落，方便一眼看到新增結果。
 
 ## 部署到 Zeabur

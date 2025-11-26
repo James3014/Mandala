@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict
 
-from .classifier import SegmentClassifier
+from .classifier import build_classifier
 from .config import GRID_DEFINITIONS
 from .integrator import GridIntegrator
 from .mandala_blueprint import get_mandala
@@ -15,7 +15,7 @@ from .models import Segment
 
 class LinusService:
     def __init__(self):
-        self._classifier = SegmentClassifier(GRID_DEFINITIONS)
+        self._classifier = build_classifier()
         self._integrator = GridIntegrator(GRID_DEFINITIONS)
 
     def post_segments(self, payload: Dict) -> Dict:
