@@ -29,7 +29,7 @@ Mandala/
    - `frontend/index.html` 會自動呼叫上述 API；若後端沒開，畫面會改用內建 fallback 資料。
 
 5. 貼逐字稿：向 `/api/segments` `POST` 段落即可，即時看到九宮格更新。可用 curl 或直接在 Python 互動式 shell 呼叫 `LinusService.post_segments()`。
-   - 網頁上也提供貼文表單：輸入來源、貼上逐字稿（空白行分段），按「送出並分類」即會呼叫 `/api/segments` 並重新載入九宮格。
+   - 網頁上也提供貼文表單：輸入來源、貼上逐字稿（空白行分段），按「送出並分類」即會呼叫 `/api/segments`；成功後畫面會跳出提示並以藍色高亮最新的格子與段落，方便一眼看到新增結果。
 
 ## 部署到 Zeabur
 

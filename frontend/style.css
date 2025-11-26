@@ -109,6 +109,66 @@ body {
   color: #dc2626;
 }
 
+.toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.toast {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #0f172a;
+  color: white;
+  animation: fade-in 0.2s ease;
+}
+
+.toast.info {
+  background: #0ea5e9;
+}
+
+.toast.success {
+  background: #22c55e;
+}
+
+.toast.error {
+  background: #ef4444;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.entry.fresh {
+  background: #e0f2fe;
+  border-left: 3px solid #38bdf8;
+}
+
+.needs-review-list .entry.fresh {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .app-body {
   display: grid;
   grid-template-columns: 3fr 2fr;
@@ -231,6 +291,11 @@ body {
   box-shadow: 0 6px 16px rgb(15 23 42 / 0.07);
 }
 
+.overview-mandala.fresh {
+  border-color: #22d3ee;
+  box-shadow: 0 10px 25px rgb(34 211 238 / 0.3);
+}
+
 .overview-mandala h3 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
@@ -300,6 +365,11 @@ body {
 
 .grid-card.outer:hover {
   border-color: #2563eb;
+}
+
+.grid-card.fresh {
+  border-color: #22d3ee;
+  box-shadow: 0 15px 35px rgb(34 211 238 / 0.4);
 }
 
 .grid-card.active {

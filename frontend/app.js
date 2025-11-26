@@ -18,6 +18,7 @@ const segmentSourceInput = document.getElementById("segmentSource");
 const segmentTextInput = document.getElementById("segmentText");
 const segmentStatusEl = document.getElementById("segmentStatus");
 const segmentSubmitButton = document.getElementById("segmentSubmit");
+const toastStackEl = document.getElementById("toastStack");
 
 const ROOT_GRID_ID = 5;
 const API_BASE = "/api";
@@ -28,6 +29,8 @@ const state = {
   mandalaStack: [],
   searchResults: [],
   viewMode: "single",
+  recentSegmentIds: new Set(),
+  clearFreshTimer: null,
 };
 
 async function init() {
@@ -141,6 +144,7 @@ function renderMandalaBoard() {
     const clone = template.content.cloneNode(true);
     const card = clone.querySelector(".grid-card");
     card.classList.add(`slot-${slot}`);
+    let targetGrid = null;
 
     if (slot === 5) {
       card.classList.add("center");
@@ -149,6 +153,7 @@ function renderMandalaBoard() {
         mandala.centerTitle || grid.title;
       clone.querySelector(".grid-detail").textContent = mandala.center || "";
       clone.querySelector(".grid-note").textContent = grid.persona || "";
+      targetGrid = grid;
     } else if (mandala.items[itemIndex]) {
       const item = mandala.items[itemIndex];
       card.classList.add("outer");
@@ -162,10 +167,15 @@ function renderMandalaBoard() {
         : "";
       if (item.targetGridId) {
         card.addEventListener("click", () => drillDown(item.targetGridId));
+        targetGrid = getGrid(item.targetGridId);
       }
     } else {
       clone.querySelector(".grid-title").textContent = "";
       clone.querySelector(".grid-detail").textContent = "";
+    }
+
+    if (targetGrid && gridHasFreshEntries(targetGrid)) {
+      card.classList.add("fresh");
     }
 
     gridBoardEl.appendChild(clone);
@@ -194,7 +204,9 @@ function renderOverviewBoard() {
   ordered.forEach((grid) => {
     const mandala = buildMandala(grid);
     const article = document.createElement("article");
-    article.className = "overview-mandala";
+    article.className = gridHasFreshEntries(grid)
+      ? "overview-mandala fresh"
+      : "overview-mandala";
     article.innerHTML = `
       <h3>#${grid.gridId} ${grid.title}</h3>
       <div class="mini-grid">
@@ -309,8 +321,9 @@ function renderDetailPanel(grid) {
 }
 
 function renderEntry(entry) {
+  const fresh = state.recentSegmentIds.has(entry.segment_id) ? "fresh" : "";
   return `
-    <li class="entry">
+    <li class="entry ${fresh}">
       <div>
         <p class="snippet">${entry.snippet}</p>
         <small class="meta">
@@ -485,6 +498,13 @@ async function handleSegmentSubmit(event) {
     }
     await response.json();
     setSegmentStatus(`完成，上傳 ${segments.length} 段`, "success");
+    pushToast(`已新增 ${segments.length} 段洞察`, "success");
+    const preview = segments[0]?.text?.split("\n")[0] || "";
+    if (preview) {
+      pushToast(`首段：${preview.slice(0, 40)}${preview.length > 40 ? "…" : ""}`, "info");
+    }
+    state.recentSegmentIds = new Set(segments.map((seg) => seg.segment_id));
+    scheduleFreshClear();
     segmentTextInput.value = "";
     await loadGrids();
     render();
@@ -510,6 +530,32 @@ function setSegmentStatus(message, type) {
   if (type) {
     segmentStatusEl.classList.add(type);
   }
+}
+
+function pushToast(message, type = "info", duration = 4000) {
+  if (!toastStackEl) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  toastStackEl.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
+}
+
+function gridHasFreshEntries(grid) {
+  if (!grid || !grid.entries) {
+    return false;
+  }
+  return grid.entries.some((entry) => state.recentSegmentIds.has(entry.segment_id));
+}
+
+function scheduleFreshClear() {
+  if (state.clearFreshTimer) {
+    clearTimeout(state.clearFreshTimer);
+  }
+  state.clearFreshTimer = setTimeout(() => {
+    state.recentSegmentIds.clear();
+    render();
+  }, 8000);
 }
 
 const fallbackGrids = {
