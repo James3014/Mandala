@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Linus 九宮格洞察板</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>九宮格洞察板</h1>
+        <p>打開即懂本日重點，點擊即查原始段落。</p>
+      </div>
+      <div class="search-container">
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="搜尋關鍵字、來源或狀態..."
+        />
+        <select id="gridFilter">
+          <option value="">全部格子</option>
+        </select>
+        <select id="statusFilter">
+          <option value="">所有狀態</option>
+          <option value="new_entry">本次新增</option>
+          <option value="needs_review">需覆核</option>
+          <option value="merged">已合併</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="app-body">
+      <section class="mandala-column">
+        <div class="mandala-controls">
+          <button id="backButton" disabled>回上一層</button>
+          <div class="breadcrumb" id="mandalaBreadcrumb">⑤ 中心：SKiDIY 核心目標</div>
+          <div class="view-toggle">
+            <label><input type="radio" name="viewMode" value="single" checked /> 單宮模式</label>
+            <label><input type="radio" name="viewMode" value="overview" /> 9×9 總覽</label>
+          </div>
+        </div>
+        <section class="grid-board" id="gridBoard"></section>
+        <section class="grid-board overview hidden" id="overviewBoard"></section>
+      </section>
+      <aside class="detail-panel" id="detailPanel">
+        <div class="placeholder">
+          <h2>選擇中心或外圈格</h2>
+          <p>點擊曼陀羅任一格即可展開 summary、來源與 needs review。</p>
+        </div>
+      </aside>
+    </main>
+
+    <section class="search-results" id="searchResults">
+      <header>
+        <h3>搜尋結果</h3>
+        <span id="resultCount"></span>
+      </header>
+      <ul id="resultsList"></ul>
+    </section>
+
+    <template id="gridCardTemplate">
+      <article class="grid-card">
+        <span class="grid-id"></span>
+        <h2 class="grid-title"></h2>
+        <p class="grid-detail"></p>
+        <small class="grid-note"></small>
+      </article>
+    </template>
+
+    <template id="entryTemplate">
+      <li class="entry">
+        <div>
+          <p class="snippet"></p>
+          <small class="meta"></small>
+        </div>
+        <button class="action-view-log">查看 Log</button>
+      </li>
+    </template>
+
+    <div class="modal" id="logModal">
+      <div class="modal-content">
+        <header>
+          <h3>Insight Log</h3>
+          <button id="closeModal">×</button>
+        </header>
+        <ul id="logList"></ul>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
