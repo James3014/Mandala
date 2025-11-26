@@ -19,6 +19,8 @@ const segmentTextInput = document.getElementById("segmentText");
 const segmentStatusEl = document.getElementById("segmentStatus");
 const segmentSubmitButton = document.getElementById("segmentSubmit");
 const toastStackEl = document.getElementById("toastStack");
+const ingestResultsEl = document.getElementById("ingestResults");
+const ingestTableBodyEl = document.getElementById("ingestTableBody");
 
 const ROOT_GRID_ID = 5;
 const API_BASE = "/api";
@@ -496,7 +498,7 @@ async function handleSegmentSubmit(event) {
     if (!response.ok) {
       throw new Error("submit failed");
     }
-    await response.json();
+    const result = await response.json();
     setSegmentStatus(`完成，上傳 ${segments.length} 段`, "success");
     pushToast(`已新增 ${segments.length} 段洞察`, "success");
     const preview = segments[0]?.text?.split("\n")[0] || "";
@@ -505,6 +507,7 @@ async function handleSegmentSubmit(event) {
     }
     state.recentSegmentIds = new Set(segments.map((seg) => seg.segment_id));
     scheduleFreshClear();
+    renderIngestResults(result.results || []);
     segmentTextInput.value = "";
     await loadGrids();
     render();
@@ -556,6 +559,29 @@ function scheduleFreshClear() {
     state.recentSegmentIds.clear();
     render();
   }, 8000);
+}
+
+function renderIngestResults(results) {
+  if (!ingestResultsEl || !ingestTableBodyEl) return;
+  if (!results.length) {
+    ingestResultsEl.classList.add("hidden");
+    ingestTableBodyEl.innerHTML = "";
+    return;
+  }
+  ingestResultsEl.classList.remove("hidden");
+  ingestTableBodyEl.innerHTML = results
+    .map(
+      (item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${(item.snippet || "").slice(0, 60)}</td>
+          <td>#${item.grid_id}</td>
+          <td class="status-${item.status}">${item.status}</td>
+          <td>${item.summary_notes || ""}</td>
+        </tr>
+      `
+    )
+    .join("");
 }
 
 const fallbackGrids = {

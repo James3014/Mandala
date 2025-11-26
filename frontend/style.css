@@ -109,6 +109,47 @@ body {
   color: #dc2626;
 }
 
+#ingestResults {
+  margin-top: 1rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5f5;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+#ingestResults table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+#ingestResults th,
+#ingestResults td {
+  border: 1px solid #cbd5f5;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+#ingestResults .status-new_entry {
+  color: #15803d;
+  font-weight: 600;
+}
+
+#ingestResults .status-needs_review {
+  color: #f97316;
+  font-weight: 600;
+}
+
+#ingestResults .status-merged {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+#ingestResults.hidden {
+  display: none;
+}
+
 .toast-stack {
   display: flex;
   flex-direction: column;

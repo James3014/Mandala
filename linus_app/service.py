@@ -37,6 +37,7 @@ class LinusService:
                     }
                     for assignment in assignments
                 ],
+                "snippet": segment.text.replace("\n", " ")[:80],
             }
             result_payload.update(outcome)
             results.append(result_payload)
