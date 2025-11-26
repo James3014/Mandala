@@ -70,7 +70,13 @@ class LinusService:
     def _build_segment(item: Dict) -> Segment:
         segment_id = item.get("segment_id") or f"seg-{uuid.uuid4().hex[:8]}"
         timestamp_str = item.get("timestamp")
-        timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.now(timezone.utc)
+        timestamp = datetime.now(timezone.utc)
+        if timestamp_str:
+            normalized = timestamp_str.replace("Z", "+00:00")
+            try:
+                timestamp = datetime.fromisoformat(normalized)
+            except ValueError:
+                timestamp = datetime.now(timezone.utc)
         return Segment(
             id=segment_id,
             source=item.get("source", "unknown"),

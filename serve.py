@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from linus_app import LinusService
+import os
 
 ROOT = Path(__file__).resolve().parent
 FRONTEND_DIR = ROOT / "frontend"
@@ -63,9 +64,10 @@ class LinusHandler(SimpleHTTPRequestHandler):
         self.wfile.write(encoded)
 
 
-def run(host: str = "127.0.0.1", port: int = 8000) -> None:
-    httpd = ThreadingHTTPServer((host, port), LinusHandler)
-    print(f"Serving frontend + API on http://{host}:{port}")
+def run(host: str = "0.0.0.0", port: int | None = None) -> None:
+    actual_port = port or int(os.getenv("PORT", "8000"))
+    httpd = ThreadingHTTPServer((host, actual_port), LinusHandler)
+    print(f"Serving frontend + API on http://{host}:{actual_port}")
     httpd.serve_forever()
 
 

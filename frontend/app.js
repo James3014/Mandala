@@ -506,7 +506,10 @@ function splitSegments(rawText) {
 function setSegmentStatus(message, type) {
   if (!segmentStatusEl) return;
   segmentStatusEl.textContent = message;
-  segmentStatusEl.className = type ? type : "";
+  segmentStatusEl.className = "";
+  if (type) {
+    segmentStatusEl.classList.add(type);
+  }
 }
 
 const fallbackGrids = {

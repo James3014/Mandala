@@ -22,7 +22,7 @@ Mandala/
    ```
 4. 啟動前後端整合伺服器：
    ```bash
-   python3 serve.py
+   PORT=8000 python3 serve.py
    ```
    - 預設 http://127.0.0.1:8000  
    - `/api/grids`、`/api/grids/{id}`、`/api/segments`、`/api/segments/{id}/log` 直接呼叫 `LinusService`。
@@ -37,7 +37,7 @@ Mandala/
 2. Zeabur 建立新服務並連結該 Repo，選擇 **Python** Runtime。  
 3. 指定部署設定：
    - **Start Command**：`python3 serve.py`
-   - **Port**：Zeabur 會注入 `PORT` 環境變數，可修改 `serve.py` 的 `run()` 以 `int(os.getenv("PORT", 8000))` 監聽（目前預設 8000，Zeabur 亦支援固定 Port 轉發）。  
+   - **PORT**：Zeabur 會自動注入此環境變數，`serve.py` 已改為 `int(os.getenv("PORT", "8000"))`，無須額外設定。  
    - 無需額外 build step；Zeabur 會自動以 `pip install -r requirements.txt` 方式安裝，但本專案沒有第三方依賴，可空白。  
 4. 部署後，Zeabur 會提供一個公開 URL，直接瀏覽 `/index.html` 即可；API 路徑 `/api/*` 會共享同一網域。
 
