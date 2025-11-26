@@ -13,6 +13,11 @@ const closeModalBtn = document.getElementById("closeModal");
 const backButtonEl = document.getElementById("backButton");
 const breadcrumbEl = document.getElementById("mandalaBreadcrumb");
 const viewModeInputs = document.querySelectorAll('input[name="viewMode"]');
+const segmentFormEl = document.getElementById("segmentForm");
+const segmentSourceInput = document.getElementById("segmentSource");
+const segmentTextInput = document.getElementById("segmentText");
+const segmentStatusEl = document.getElementById("segmentStatus");
+const segmentSubmitButton = document.getElementById("segmentSubmit");
 
 const ROOT_GRID_ID = 5;
 const API_BASE = "/api";
@@ -31,6 +36,9 @@ async function init() {
   viewModeInputs.forEach((input) =>
     input.addEventListener("change", (event) => setViewMode(event.target.value))
   );
+  if (segmentFormEl) {
+    segmentFormEl.addEventListener("submit", handleSegmentSubmit);
+  }
   render();
 }
 
@@ -442,6 +450,64 @@ searchInputEl.addEventListener("input", filterSearchResults);
 gridFilterEl.addEventListener("change", filterSearchResults);
 statusFilterEl.addEventListener("change", filterSearchResults);
 backButtonEl.addEventListener("click", handleBack);
+
+async function handleSegmentSubmit(event) {
+  event.preventDefault();
+  const rawText = (segmentTextInput.value || "").trim();
+  if (!rawText) {
+    setSegmentStatus("請先貼上逐字稿內容", "error");
+    return;
+  }
+  const source = (segmentSourceInput.value || "").trim() || "manual";
+  const blocks = splitSegments(rawText);
+  if (!blocks.length) {
+    setSegmentStatus("無法解析段落，請再確認格式", "error");
+    return;
+  }
+
+  const segments = blocks.map((text, index) => ({
+    source,
+    text,
+    segment_id: `manual-${Date.now()}-${index}`,
+    timestamp: new Date().toISOString(),
+  }));
+
+  segmentSubmitButton.disabled = true;
+  setSegmentStatus("分類中...", "info");
+  try {
+    const response = await fetch(`${API_BASE}/segments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ segments }),
+    });
+    if (!response.ok) {
+      throw new Error("submit failed");
+    }
+    await response.json();
+    setSegmentStatus(`完成，上傳 ${segments.length} 段`, "success");
+    segmentTextInput.value = "";
+    await loadGrids();
+    render();
+  } catch (error) {
+    console.error(error);
+    setSegmentStatus("送出失敗，請稍後再試", "error");
+  } finally {
+    segmentSubmitButton.disabled = false;
+  }
+}
+
+function splitSegments(rawText) {
+  return rawText
+    .split(/\n\s*\n+/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0);
+}
+
+function setSegmentStatus(message, type) {
+  if (!segmentStatusEl) return;
+  segmentStatusEl.textContent = message;
+  segmentStatusEl.className = type ? type : "";
+}
 
 const fallbackGrids = {
   grids: [

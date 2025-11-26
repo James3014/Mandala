@@ -29,6 +29,31 @@
       </div>
     </header>
 
+    <section class="segment-form">
+      <div>
+        <h2>貼入逐字稿</h2>
+        <p>一次貼多段文字（以空白行分段），系統會自動分類到九宮格。</p>
+      </div>
+      <form id="segmentForm">
+        <div class="form-row">
+          <label>
+            來源 / 標籤
+            <input type="text" id="segmentSource" placeholder="例如：meeting-2024-09-20" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            逐字稿內容
+            <textarea id="segmentText" rows="4" placeholder="貼上逐字稿，空白行分段..."></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <span id="segmentStatus"></span>
+          <button type="submit" id="segmentSubmit">送出並分類</button>
+        </div>
+      </form>
+    </section>
+
     <main class="app-body">
       <section class="mandala-column">
         <div class="mandala-controls">
