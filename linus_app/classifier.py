@@ -83,10 +83,11 @@ class RuleBasedClassifier(BaseClassifier):
 class GeminiClassifier(BaseClassifier):
     """Calls Gemini model with structured prompt to classify segments."""
 
-    API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+    BASE_URL = "https://generativelanguage.googleapis.com/v1/models/{model}:generateContent"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str):
         self._api_key = api_key
+        self._model = model
         self._prompt = self._build_prompt()
 
     def _build_prompt(self) -> str:
@@ -126,7 +127,7 @@ class GeminiClassifier(BaseClassifier):
         }
         params = {"key": self._api_key}
         data_bytes = json.dumps(payload).encode("utf-8")
-        url = f"{self.API_URL}?{parse.urlencode(params)}"
+        url = f"{self.BASE_URL.format(model=self._model)}?{parse.urlencode(params)}"
         req = request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"})
         try:
             with request.urlopen(req, timeout=20) as resp:
@@ -172,5 +173,6 @@ class GeminiClassifier(BaseClassifier):
 def build_classifier() -> BaseClassifier:
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
-        return GeminiClassifier(api_key)
+        model = os.getenv("GEMINI_MODEL", "gemini-3.0-pro")
+        return GeminiClassifier(api_key, model)
     return RuleBasedClassifier()

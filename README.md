@@ -22,10 +22,12 @@ Mandala/
    ```
 4. 設定分類器：
    - **預設**：若未設定任何 API Key，會使用關鍵字 rule-based 分類（精度較低）。
-   - **啟用 Gemini**：在環境變數加入 `GEMINI_API_KEY=<your-key>`，程式會自動改用 Gemini 1.5 Flash 處理分類。範例：
+   - **啟用 Gemini**：在環境變數加入 `GEMINI_API_KEY=<your-key>`，程式會改用 Gemini 模型（預設 `gemini-3.0-pro`；若要換模型可再設定 `GEMINI_MODEL=<model-name>`）。範例：
      ```bash
      export GEMINI_API_KEY=your_key_here
+     export GEMINI_MODEL=gemini-3.0-pro
      ```
+     其他可用模型：`gemini-2.5-pro`（長 context、推理強）
 
 5. 啟動前後端整合伺服器：
    ```bash
