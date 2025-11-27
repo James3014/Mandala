@@ -23,7 +23,8 @@ class LinusService:
         self._using_gemini = self._classifier is not self._fallback_classifier
         self._integrator = GridIntegrator(GRID_DEFINITIONS)
         state_path = Path(os.getenv("LINUS_STATE_PATH", "data/linus_state.json"))
-        self._store = PersistentStore(state_path)
+        debounce = float(os.getenv("LINUS_SAVE_DEBOUNCE", "0.5"))
+        self._store = PersistentStore(state_path, debounce_seconds=debounce)
         self._store.hydrate(self._integrator.cells, self._integrator.logs)
 
     def post_segments(self, payload: Dict) -> Dict:
@@ -52,7 +53,7 @@ class LinusService:
                 result_payload["error"] = classifier_error
             result_payload.update(self._augment_outcome(outcome, classifier_error))
             results.append(result_payload)
-        self._store.save(self._integrator.cells, self._integrator.logs)
+        self._store.schedule_save(self._integrator.cells, self._integrator.logs)
         return {"results": results}
 
     def get_grid(self, grid_id: int) -> Dict:
@@ -78,6 +79,9 @@ class LinusService:
             payload = self.get_grid(grid_id)
             grids.append(payload)
         return {"grids": grids}
+
+    def export_state(self) -> Dict:
+        return self._store.snapshot(self._integrator.cells, self._integrator.logs)
 
     @staticmethod
     def _build_segment(item: Dict) -> Segment:

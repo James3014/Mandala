@@ -96,6 +96,15 @@ body {
   cursor: not-allowed;
 }
 
+.export-button {
+  border: 1px solid #2563eb;
+  color: #2563eb;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
 #segmentStatus {
   font-size: 0.9rem;
   color: #0f172a;
@@ -337,6 +346,11 @@ body {
   box-shadow: 0 10px 25px rgb(34 211 238 / 0.3);
 }
 
+.overview-mandala.has-review {
+  border-color: #f97316;
+  box-shadow: 0 12px 28px rgb(249 115 22 / 0.2);
+}
+
 .overview-mandala h3 {
   margin: 0 0 0.5rem;
   font-size: 1rem;
@@ -395,6 +409,13 @@ body {
   border: 2px solid transparent;
 }
 
+.grid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
 .grid-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgb(15 23 42 / 0.12);
@@ -413,6 +434,10 @@ body {
   box-shadow: 0 15px 35px rgb(34 211 238 / 0.4);
 }
 
+.grid-card.has-review {
+  border-color: #f97316;
+}
+
 .grid-card.active {
   border-color: #2563eb;
 }
@@ -422,6 +447,18 @@ body {
   color: #94a3b8;
   font-size: 0.8rem;
   letter-spacing: 0.1em;
+}
+
+.needs-review-flag {
+  font-size: 0.75rem;
+  background: #f97316;
+  color: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.needs-review-flag.hidden {
+  display: none;
 }
 
 .grid-title {
@@ -459,6 +496,15 @@ body {
   margin-top: 0;
 }
 
+.detail-needs-review {
+  background: #f97316;
+  color: white;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
 .summary-list,
 .entries-list,
 .needs-review-list {
@@ -486,6 +532,12 @@ body {
   gap: 1rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.entry.needs-review {
+  background: #fff7ed;
+  border-left: 3px solid #f97316;
+  padding-left: 0.75rem;
 }
 
 .entry .snippet {

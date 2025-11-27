@@ -51,6 +51,7 @@
         <div class="form-actions">
           <span id="segmentStatus"></span>
           <button type="submit" id="segmentSubmit">送出並分類</button>
+          <a class="export-button" href="/api/export" target="_blank">下載最新資料</a>
         </div>
         <div class="toast-stack" id="toastStack"></div>
       </form>
@@ -104,7 +105,10 @@
 
     <template id="gridCardTemplate">
       <article class="grid-card">
-        <span class="grid-id"></span>
+        <div class="grid-header">
+          <span class="grid-id"></span>
+          <span class="needs-review-flag hidden"></span>
+        </div>
         <h2 class="grid-title"></h2>
         <p class="grid-detail"></p>
         <small class="grid-note"></small>

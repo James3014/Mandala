@@ -35,6 +35,25 @@ const state = {
   clearFreshTimer: null,
 };
 
+const MandalaModule = {
+  render: render,
+  renderBoard: renderMandalaBoard,
+  renderOverview: renderOverviewBoard,
+  renderDetail: renderDetailPanel,
+  updateControls,
+};
+
+const SearchModule = {
+  filter: filterSearchResults,
+  render: renderSearchResults,
+};
+
+const SegmentModule = {
+  submit: handleSegmentSubmit,
+  setStatus: setSegmentStatus,
+  renderResults: renderIngestResults,
+};
+
 async function init() {
   await loadGrids();
   populateGridFilter();
@@ -42,9 +61,9 @@ async function init() {
     input.addEventListener("change", (event) => setViewMode(event.target.value))
   );
   if (segmentFormEl) {
-    segmentFormEl.addEventListener("submit", handleSegmentSubmit);
+    segmentFormEl.addEventListener("submit", SegmentModule.submit);
   }
-  render();
+  MandalaModule.render();
 }
 
 async function loadGrids() {
@@ -101,20 +120,20 @@ function render() {
     detailPanelEl.classList.remove("hidden");
     backButtonEl.disabled =
       state.currentGridId === ROOT_GRID_ID && state.mandalaStack.length === 0;
-    renderMandalaBoard();
+    MandalaModule.renderBoard();
   } else {
     appBodyEl.classList.add("overview-mode");
     gridBoardEl.classList.add("hidden");
     overviewBoardEl.classList.remove("hidden");
     detailPanelEl.classList.add("hidden");
     backButtonEl.disabled = true;
-    renderOverviewBoard();
+    MandalaModule.renderOverview();
   }
 }
 
 function setViewMode(mode) {
   state.viewMode = mode;
-  render();
+  MandalaModule.render();
 }
 
 function renderMandalaBoard() {
@@ -176,6 +195,19 @@ function renderMandalaBoard() {
       clone.querySelector(".grid-detail").textContent = "";
     }
 
+    const needsCount = (targetGrid?.needsReview?.length || 0);
+    const flag = card.querySelector(".needs-review-flag");
+    if (flag) {
+      if (needsCount > 0) {
+        flag.textContent = `需覆核 ${needsCount}`;
+        flag.classList.remove("hidden");
+        card.classList.add("has-review");
+      } else {
+        flag.classList.add("hidden");
+        card.classList.remove("has-review");
+      }
+    }
+
     if (targetGrid && gridHasFreshEntries(targetGrid)) {
       card.classList.add("fresh");
     }
@@ -206,9 +238,13 @@ function renderOverviewBoard() {
   ordered.forEach((grid) => {
     const mandala = buildMandala(grid);
     const article = document.createElement("article");
-    article.className = gridHasFreshEntries(grid)
-      ? "overview-mandala fresh"
-      : "overview-mandala";
+    article.className = "overview-mandala";
+    if (gridHasFreshEntries(grid)) {
+      article.classList.add("fresh");
+    }
+    if (gridHasNeedsReview(grid)) {
+      article.classList.add("has-review");
+    }
     article.innerHTML = `
       <h3>#${grid.gridId} ${grid.title}</h3>
       <div class="mini-grid">
@@ -251,7 +287,7 @@ function buildMiniCells(grid, mandala) {
 function drillDown(targetGridId) {
   state.mandalaStack.push(state.currentGridId);
   state.currentGridId = targetGridId;
-  render();
+  MandalaModule.render();
 }
 
 function handleBack() {
@@ -260,13 +296,13 @@ function handleBack() {
   } else {
     state.currentGridId = ROOT_GRID_ID;
   }
-  render();
+  MandalaModule.render();
 }
 
 function jumpToGrid(gridId) {
   state.mandalaStack = gridId === ROOT_GRID_ID ? [] : [ROOT_GRID_ID];
   state.currentGridId = gridId;
-  render();
+  MandalaModule.render();
 }
 
 function updateControls() {
@@ -286,7 +322,14 @@ function renderDetailPanel(grid) {
     <header>
       <p class="grid-id">#${grid.gridId}</p>
       <h2>${grid.title}</h2>
-      <p>${grid.persona}</p>
+      <p>
+        ${grid.persona}
+        ${
+          grid.needsReview?.length
+            ? `<span class="detail-needs-review">需覆核 ${grid.needsReview.length}</span>`
+            : ""
+        }
+      </p>
     </header>
     <section>
       <div class="section-header"><h3>Summary</h3><small>維持 3-5 條</small></div>
@@ -323,9 +366,15 @@ function renderDetailPanel(grid) {
 }
 
 function renderEntry(entry) {
-  const fresh = state.recentSegmentIds.has(entry.segment_id) ? "fresh" : "";
+  const classes = ["entry"];
+  if (state.recentSegmentIds.has(entry.segment_id)) {
+    classes.push("fresh");
+  }
+  if (entry.status === "needs_review") {
+    classes.push("needs-review");
+  }
   return `
-    <li class="entry ${fresh}">
+    <li class="${classes.join(" ")}">
       <div>
         <p class="snippet">${entry.snippet}</p>
         <small class="meta">
@@ -461,9 +510,9 @@ logModalEl.addEventListener("click", (event) => {
   }
 });
 
-searchInputEl.addEventListener("input", filterSearchResults);
-gridFilterEl.addEventListener("change", filterSearchResults);
-statusFilterEl.addEventListener("change", filterSearchResults);
+searchInputEl.addEventListener("input", SearchModule.filter);
+gridFilterEl.addEventListener("change", SearchModule.filter);
+statusFilterEl.addEventListener("change", SearchModule.filter);
 backButtonEl.addEventListener("click", handleBack);
 
 async function handleSegmentSubmit(event) {
@@ -519,7 +568,7 @@ async function handleSegmentSubmit(event) {
     renderIngestResults(result.results || []);
     segmentTextInput.value = "";
     await loadGrids();
-    render();
+    MandalaModule.render();
   } catch (error) {
     console.error(error);
     setSegmentStatus("送出失敗，請稍後再試", "error");
@@ -560,13 +609,19 @@ function gridHasFreshEntries(grid) {
   return grid.entries.some((entry) => state.recentSegmentIds.has(entry.segment_id));
 }
 
+function gridHasNeedsReview(grid) {
+  if (!grid) return false;
+  const list = grid.needsReview || grid.needs_review || [];
+  return list.length > 0;
+}
+
 function scheduleFreshClear() {
   if (state.clearFreshTimer) {
     clearTimeout(state.clearFreshTimer);
   }
   state.clearFreshTimer = setTimeout(() => {
     state.recentSegmentIds.clear();
-    render();
+    MandalaModule.render();
   }, 8000);
 }
 

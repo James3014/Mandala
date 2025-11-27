@@ -15,6 +15,7 @@ from linus_app import LinusService
 def isolated_store(tmp_path, monkeypatch):
     state_path = tmp_path / "linus_state.json"
     monkeypatch.setenv("LINUS_STATE_PATH", str(state_path))
+    monkeypatch.setenv("LINUS_SAVE_DEBOUNCE", "0")
     yield
 
 

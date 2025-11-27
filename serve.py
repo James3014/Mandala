@@ -25,6 +25,10 @@ class LinusHandler(SimpleHTTPRequestHandler):
         if self.path.startswith(f"{API_PREFIX}/grids"):
             self._handle_grids_get()
             return
+        if self.path == f"{API_PREFIX}/export":
+            payload = service.export_state()
+            self._send_json(payload)
+            return
         if self.path.startswith(f"{API_PREFIX}/segments/") and self.path.endswith("/log"):
             segment_id = self.path.split("/")[-2]
             payload = service.get_segment_log(segment_id)
