@@ -14,6 +14,10 @@ from .config import GRID_DEFINITIONS, GridDefinition
 from .models import GridAssignment
 
 
+class ClassificationError(Exception):
+    """Raised when an upstream classifier fails."""
+
+
 class BaseClassifier(ABC):
     @abstractmethod
     def classify(self, text: str) -> List[GridAssignment]:
@@ -132,14 +136,14 @@ class GeminiClassifier(BaseClassifier):
         try:
             with request.urlopen(req, timeout=20) as resp:
                 data = json.load(resp)
-        except error.HTTPError as exc:
-            raise ValueError(f"Gemini HTTP error: {exc}") from exc
+        except Exception as exc:  # pragma: no cover
+            raise ClassificationError(str(exc)) from exc
 
         try:
             text_response = data["candidates"][0]["content"]["parts"][0]["text"]
             parsed = json.loads(text_response)
         except Exception as exc:  # pragma: no cover
-            raise ValueError(f"Gemini response parsing error: {exc}") from exc
+            raise ClassificationError(f"Gemini response parsing error: {exc}") from exc
 
         assignments: List[GridAssignment] = []
         primary = parsed.get("primary") or {}
@@ -170,9 +174,10 @@ class GeminiClassifier(BaseClassifier):
         return assignments
 
 
-def build_classifier() -> BaseClassifier:
+def build_classifier() -> tuple[BaseClassifier, BaseClassifier]:
+    fallback = RuleBasedClassifier()
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
-        model = os.getenv("GEMINI_MODEL", "gemini-3.0-pro")
-        return GeminiClassifier(api_key, model)
-    return RuleBasedClassifier()
+        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        return GeminiClassifier(api_key, model), fallback
+    return fallback, fallback

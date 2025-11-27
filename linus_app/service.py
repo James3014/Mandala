@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
+import sys
 import uuid
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Dict, List
 
-from .classifier import build_classifier
+from .classifier import ClassificationError, build_classifier
 from .config import GRID_DEFINITIONS
 from .integrator import GridIntegrator
 from .mandala_blueprint import get_mandala
-from .models import Segment
+from .models import GridAssignment, Segment
 
 
 class LinusService:
     def __init__(self):
-        self._classifier = build_classifier()
+        self._classifier, self._fallback_classifier = build_classifier()
+        self._using_gemini = self._classifier is not self._fallback_classifier
         self._integrator = GridIntegrator(GRID_DEFINITIONS)
 
     def post_segments(self, payload: Dict) -> Dict:
@@ -23,7 +25,7 @@ class LinusService:
         results = []
         for item in segments:
             segment = self._build_segment(item)
-            assignments = self._classifier.classify(segment.text)
+            assignments, classifier_used, classifier_error = self._classify_segment(segment)
             segment.assignments = assignments
             outcome = self._integrator.process(segment, assignments)
             result_payload = {
@@ -36,10 +38,14 @@ class LinusService:
                         "related_keywords": assignment.related_keywords,
                     }
                     for assignment in assignments
+                    for assignment in assignments
                 ],
                 "snippet": segment.text.replace("\n", " ")[:80],
+                "classifier": classifier_used,
             }
-            result_payload.update(outcome)
+            if classifier_error:
+                result_payload["error"] = classifier_error
+            result_payload.update(self._augment_outcome(outcome, classifier_error))
             results.append(result_payload)
         return {"results": results}
 
@@ -85,3 +91,24 @@ class LinusService:
             timestamp=timestamp,
             assignments=[],
         )
+
+    def _classify_segment(self, segment: Segment) -> tuple[List[GridAssignment], str, str | None]:
+        classifier_name = "rule_based"
+        error_reason = None
+        try:
+            assignments = self._classifier.classify(segment.text)
+            classifier_name = "gemini" if self._using_gemini else "rule_based"
+        except ClassificationError as exc:
+            error_reason = str(exc)
+            print(f"[Classifier] Gemini failed for segment {segment.id}: {error_reason}", file=sys.stderr)
+            assignments = self._fallback_classifier.classify(segment.text)
+            classifier_name = "rule_based_fallback"
+        return assignments, classifier_name, error_reason
+
+    @staticmethod
+    def _augment_outcome(outcome: dict, classifier_error: str | None) -> dict:
+        if classifier_error:
+            note = outcome.get("summary_notes", "") or ""
+            prefix = f"(Gemini fallback: {classifier_error}) "
+            outcome["summary_notes"] = prefix + note
+        return outcome

@@ -496,7 +496,16 @@ async function handleSegmentSubmit(event) {
       body: JSON.stringify({ segments }),
     });
     if (!response.ok) {
-      throw new Error("submit failed");
+      let message = "分類服務回傳錯誤";
+      try {
+        const errorPayload = await response.json();
+        message = errorPayload.error || JSON.stringify(errorPayload);
+      } catch {
+        // ignore
+      }
+      setSegmentStatus(message, "error");
+      pushToast(message, "error");
+      return;
     }
     const result = await response.json();
     setSegmentStatus(`完成，上傳 ${segments.length} 段`, "success");
@@ -578,6 +587,8 @@ function renderIngestResults(results) {
           <td>#${item.grid_id}</td>
           <td class="status-${item.status}">${item.status}</td>
           <td>${item.summary_notes || ""}</td>
+          <td>${item.classifier || ""}</td>
+          <td>${item.error || ""}</td>
         </tr>
       `
     )
