@@ -10,6 +10,23 @@ from typing import Any
 from linus_app import LinusService
 import os
 
+def load_env():
+    """Manually load .env file to avoid external dependencies."""
+    env_path = Path(".env")
+    if env_path.exists():
+        print("Loading environment from .env")
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"): continue
+                try:
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip()
+                except ValueError:
+                    continue
+
+load_env()
+
 ROOT = Path(__file__).resolve().parent
 FRONTEND_DIR = ROOT / "frontend"
 API_PREFIX = "/api"

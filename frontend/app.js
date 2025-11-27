@@ -1,3 +1,27 @@
+import { fetchGrids, fetchSegmentLog, postSegments } from "./api.js";
+import {
+  state,
+  setGrids,
+  getGrid,
+  setCurrentGridId,
+  setViewMode,
+  setSearchResults,
+  addRecentSegments,
+  setClearFreshTimer,
+  pushToStack,
+  popFromStack,
+  resetStack,
+  getStackPath,
+  gridHasFreshEntries,
+  gridHasNeedsReview,
+  ROOT_GRID_ID,
+} from "./store.js";
+import { renderMandalaBoard, renderOverviewBoard } from "./renderBoard.js";
+import { renderDetailPanel } from "./renderDetail.js";
+import { renderSearchResults } from "./renderSearch.js";
+import { renderIngestResults } from "./renderIngest.js";
+import { subscribe } from "./store.js";
+
 const appBodyEl = document.querySelector(".app-body");
 const gridBoardEl = document.getElementById("gridBoard");
 const overviewBoardEl = document.getElementById("overviewBoard");
@@ -22,44 +46,44 @@ const toastStackEl = document.getElementById("toastStack");
 const ingestResultsEl = document.getElementById("ingestResults");
 const ingestTableBodyEl = document.getElementById("ingestTableBody");
 
-const ROOT_GRID_ID = 5;
-const API_BASE = "/api";
-
-const state = {
-  grids: [],
-  currentGridId: ROOT_GRID_ID,
-  mandalaStack: [],
-  searchResults: [],
-  viewMode: "single",
-  recentSegmentIds: new Set(),
-  clearFreshTimer: null,
-};
+// State is now managed in store.js
 
 const MandalaModule = {
   render: render,
-  renderBoard: renderMandalaBoard,
-  renderOverview: renderOverviewBoard,
-  renderDetail: renderDetailPanel,
+  renderBoard: () => renderMandalaBoard(gridBoardEl, detailPanelEl),
+  renderOverview: () => renderOverviewBoard(overviewBoardEl),
+  renderDetail: () => renderDetailPanel(detailPanelEl, getGrid(state.currentGridId), logModalEl, logListEl),
   updateControls,
 };
 
 const SearchModule = {
   filter: filterSearchResults,
-  render: renderSearchResults,
+  render: () => renderSearchResults(resultsListEl, resultCountEl, detailPanelEl),
 };
 
 const SegmentModule = {
   submit: handleSegmentSubmit,
   setStatus: setSegmentStatus,
-  renderResults: renderIngestResults,
+  renderResults: (results) => renderIngestResults(ingestResultsEl, ingestTableBodyEl, results),
 };
 
 async function init() {
   await loadGrids();
   populateGridFilter();
   viewModeInputs.forEach((input) =>
-    input.addEventListener("change", (event) => setViewMode(event.target.value))
+    input.addEventListener("change", (event) => setViewModeHandler(event.target.value))
   );
+
+  // Subscribe to state changes
+  subscribe(() => {
+    // Optional: fine-grained updates could go here, but for now we rely on explicit render calls
+    // or we could auto-render on state change.
+    // For this refactor, we keep the explicit render calls to match existing behavior,
+    // but the store notifies listeners.
+    // Let's just re-render search results if they change?
+    // Actually, let's keep it simple and manual for now as per original logic.
+  });
+
   if (segmentFormEl) {
     segmentFormEl.addEventListener("submit", SegmentModule.submit);
   }
@@ -68,18 +92,13 @@ async function init() {
 
 async function loadGrids() {
   try {
-    const response = await fetch(`${API_BASE}/grids`);
-    if (!response.ok) {
-      throw new Error("API failed");
-    }
-    const data = await response.json();
-    state.grids = data.grids.map(normalizeGrid);
-    return;
+    const data = await fetchGrids();
+    setGrids(data.grids.map(normalizeGrid));
   } catch (error) {
     console.warn(
       "載入 API 失敗，改用內建假資料。請執行 `python serve.py` 以啟用後端 API。"
     );
-    state.grids = fallbackGrids.grids;
+    setGrids(fallbackGrids.grids);
   }
 }
 
@@ -108,9 +127,7 @@ function populateGridFilter() {
   });
 }
 
-function getGrid(gridId) {
-  return state.grids.find((item) => item.gridId === gridId);
-}
+// getGrid is imported from store.js
 
 function render() {
   if (state.viewMode === "single") {
@@ -121,6 +138,7 @@ function render() {
     backButtonEl.disabled =
       state.currentGridId === ROOT_GRID_ID && state.mandalaStack.length === 0;
     MandalaModule.renderBoard();
+    MandalaModule.renderDetail(); // Ensure detail is also rendered
   } else {
     appBodyEl.classList.add("overview-mode");
     gridBoardEl.classList.add("hidden");
@@ -131,294 +149,45 @@ function render() {
   }
 }
 
-function setViewMode(mode) {
-  state.viewMode = mode;
+function setViewModeHandler(mode) {
+  setViewMode(mode);
   MandalaModule.render();
 }
 
-function renderMandalaBoard() {
-  gridBoardEl.innerHTML = "";
-  const template = document.getElementById("gridCardTemplate");
-  const grid = getGrid(state.currentGridId);
-  if (!grid) {
-    gridBoardEl.innerHTML =
-      "<div class='empty-state'>尚未載入任何格子，請確認 API 或 fallback 資料。</div>";
-    detailPanelEl.innerHTML =
-      "<div class='placeholder'><h2>沒有資料</h2><p>請先貼入逐字稿或檢查伺服器。</p></div>";
-    return;
-  }
-
-  const mandala = buildMandala(grid);
-  const slotOrder = [
-    { slot: 1, itemIndex: 0 },
-    { slot: 2, itemIndex: 1 },
-    { slot: 3, itemIndex: 2 },
-    { slot: 4, itemIndex: 3 },
-    { slot: 5, itemIndex: null },
-    { slot: 6, itemIndex: 4 },
-    { slot: 7, itemIndex: 5 },
-    { slot: 8, itemIndex: 6 },
-    { slot: 9, itemIndex: 7 },
-  ];
-
-  slotOrder.forEach(({ slot, itemIndex }) => {
-    const clone = template.content.cloneNode(true);
-    const card = clone.querySelector(".grid-card");
-    card.classList.add(`slot-${slot}`);
-    let targetGrid = null;
-
-    if (slot === 5) {
-      card.classList.add("center");
-      clone.querySelector(".grid-id").textContent = `#${grid.gridId}`;
-      clone.querySelector(".grid-title").textContent =
-        mandala.centerTitle || grid.title;
-      clone.querySelector(".grid-detail").textContent = mandala.center || "";
-      clone.querySelector(".grid-note").textContent = grid.persona || "";
-      targetGrid = grid;
-    } else if (mandala.items[itemIndex]) {
-      const item = mandala.items[itemIndex];
-      card.classList.add("outer");
-      clone.querySelector(".grid-id").textContent = item.targetGridId
-        ? `#${item.targetGridId}`
-        : "•";
-      clone.querySelector(".grid-title").textContent = item.title;
-      clone.querySelector(".grid-detail").textContent = item.detail;
-      clone.querySelector(".grid-note").textContent = item.targetGridId
-        ? "點擊展開"
-        : "";
-      if (item.targetGridId) {
-        card.addEventListener("click", () => drillDown(item.targetGridId));
-        targetGrid = getGrid(item.targetGridId);
-      }
-    } else {
-      clone.querySelector(".grid-title").textContent = "";
-      clone.querySelector(".grid-detail").textContent = "";
-    }
-
-    const needsCount = (targetGrid?.needsReview?.length || 0);
-    const flag = card.querySelector(".needs-review-flag");
-    if (flag) {
-      if (needsCount > 0) {
-        flag.textContent = `需覆核 ${needsCount}`;
-        flag.classList.remove("hidden");
-        card.classList.add("has-review");
-      } else {
-        flag.classList.add("hidden");
-        card.classList.remove("has-review");
-      }
-    }
-
-    if (targetGrid && gridHasFreshEntries(targetGrid)) {
-      card.classList.add("fresh");
-    }
-
-    gridBoardEl.appendChild(clone);
-  });
-
-  updateControls();
-  renderDetailPanel(grid);
-}
-
-function buildMandala(grid) {
-  if (grid.mandala) {
-    return grid.mandala;
-  }
-  return {
-    centerTitle: grid.title,
-    center: grid.summary[0] || "",
-    items: [],
-  };
-}
-
-function renderOverviewBoard() {
-  overviewBoardEl.innerHTML = "";
-  const template = document.getElementById("gridCardTemplate");
-  const ordered = [...state.grids].sort((a, b) => a.gridId - b.gridId);
-
-  ordered.forEach((grid) => {
-    const mandala = buildMandala(grid);
-    const article = document.createElement("article");
-    article.className = "overview-mandala";
-    if (gridHasFreshEntries(grid)) {
-      article.classList.add("fresh");
-    }
-    if (gridHasNeedsReview(grid)) {
-      article.classList.add("has-review");
-    }
-    article.innerHTML = `
-      <h3>#${grid.gridId} ${grid.title}</h3>
-      <div class="mini-grid">
-        ${buildMiniCells(grid, mandala).join("")}
-      </div>
-    `;
-    overviewBoardEl.appendChild(article);
-  });
-}
-
-function buildMiniCells(grid, mandala) {
-  const cells = [];
-  const slots = [
-    mandala.items[0],
-    mandala.items[1],
-    mandala.items[2],
-    mandala.items[3],
-    null,
-    mandala.items[4],
-    mandala.items[5],
-    mandala.items[6],
-    mandala.items[7],
-  ];
-  slots.forEach((item, index) => {
-    if (index === 4) {
-      cells.push(
-        `<div class="mini-cell center"><strong>${grid.gridId}</strong><span>${mandala.centerTitle || grid.title}</span></div>`
-      );
-    } else if (item) {
-      cells.push(
-        `<div class="mini-cell"><strong>${item.title}</strong><span>${item.detail}</span></div>`
-      );
-    } else {
-      cells.push('<div class="mini-cell"></div>');
-    }
-  });
-  return cells;
-}
+// Render functions moved to separate modules
 
 function drillDown(targetGridId) {
-  state.mandalaStack.push(state.currentGridId);
-  state.currentGridId = targetGridId;
+  pushToStack(state.currentGridId);
+  setCurrentGridId(targetGridId);
   MandalaModule.render();
 }
 
 function handleBack() {
-  if (state.mandalaStack.length > 0) {
-    state.currentGridId = state.mandalaStack.pop();
+  const prev = popFromStack();
+  if (prev) {
+    setCurrentGridId(prev);
   } else {
-    state.currentGridId = ROOT_GRID_ID;
+    setCurrentGridId(ROOT_GRID_ID);
   }
   MandalaModule.render();
 }
 
 function jumpToGrid(gridId) {
-  state.mandalaStack = gridId === ROOT_GRID_ID ? [] : [ROOT_GRID_ID];
-  state.currentGridId = gridId;
+  if (gridId === ROOT_GRID_ID) {
+    resetStack();
+  } else {
+    resetStack();
+    pushToStack(ROOT_GRID_ID);
+  }
+  setCurrentGridId(gridId);
   MandalaModule.render();
 }
 
 function updateControls() {
-  const path = [...state.mandalaStack, state.currentGridId]
-    .map((id) => getGrid(id)?.title || `#${id}`)
-    .join(" › ");
-  breadcrumbEl.textContent = path;
+  breadcrumbEl.textContent = getStackPath();
 }
 
-function renderDetailPanel(grid) {
-  if (!grid) {
-    detailPanelEl.innerHTML =
-      "<div class='placeholder'><h2>沒有資料</h2><p>請確認 API 是否回傳內容。</p></div>";
-    return;
-  }
-  detailPanelEl.innerHTML = `
-    <header>
-      <p class="grid-id">#${grid.gridId}</p>
-      <h2>${grid.title}</h2>
-      <p>
-        ${grid.persona}
-        ${
-          grid.needsReview?.length
-            ? `<span class="detail-needs-review">需覆核 ${grid.needsReview.length}</span>`
-            : ""
-        }
-      </p>
-    </header>
-    <section>
-      <div class="section-header"><h3>Summary</h3><small>維持 3-5 條</small></div>
-      <ul class="summary-list">
-        ${grid.summary.map((item) => `<li>${item}</li>`).join("")}
-      </ul>
-    </section>
-    <section class="entries">
-      <div class="section-header">
-        <h3>Entries (${grid.entries.length})</h3>
-      </div>
-      <ul class="entries-list">
-        ${grid.entries.map(renderEntry).join("")}
-      </ul>
-    </section>
-    <section>
-      <div class="section-header">
-        <h3>Needs Review (${grid.needsReview.length})</h3>
-      </div>
-      <ul class="needs-review-list">
-        ${
-          grid.needsReview.length
-            ? grid.needsReview.map(renderEntry).join("")
-            : "<li>無待覆核段落</li>"
-        }
-      </ul>
-    </section>
-    ${renderMandalaDetail(grid)}
-  `;
-
-  detailPanelEl.querySelectorAll(".action-view-log").forEach((button) => {
-    button.addEventListener("click", () => openLogModal(button.dataset.segmentId));
-  });
-}
-
-function renderEntry(entry) {
-  const classes = ["entry"];
-  if (state.recentSegmentIds.has(entry.segment_id)) {
-    classes.push("fresh");
-  }
-  if (entry.status === "needs_review") {
-    classes.push("needs-review");
-  }
-  return `
-    <li class="${classes.join(" ")}">
-      <div>
-        <p class="snippet">${entry.snippet}</p>
-        <small class="meta">
-          ${entry.source} · ${entry.status} · conf ${entry.confidence}
-          ${entry.related_grids?.length ? ` · related ${entry.related_grids.join(",")}` : ""}
-        </small>
-      </div>
-      <button class="action-view-log" data-segment-id="${entry.segment_id}">
-        查看 Log
-      </button>
-    </li>
-  `;
-}
-
-function renderMandalaDetail(grid) {
-  if (!grid.mandala || !grid.mandala.items?.length) {
-    return "";
-  }
-
-  return `
-    <section class="mandala-section">
-      <div class="section-header">
-        <h3>曼陀羅展開</h3>
-        <small>中心 + 外圈 8 格</small>
-      </div>
-      <div class="mandala-center">
-        <strong>${grid.mandala.centerTitle || grid.title}</strong>
-        <p>${grid.mandala.center}</p>
-      </div>
-      <div class="mandala-grid">
-        ${grid.mandala.items
-          .map(
-            (item) => `
-              <article class="mandala-item">
-                <h4>${item.title}</h4>
-                <p>${item.detail}</p>
-              </article>
-            `
-          )
-          .join("")}
-      </div>
-    </section>
-  `;
-}
+// Render functions moved to separate modules
 
 function filterSearchResults() {
   const keyword = searchInputEl.value.trim().toLowerCase();
@@ -448,59 +217,24 @@ function filterSearchResults() {
     );
   }
 
-  state.searchResults = filtered;
-  renderSearchResults();
+  setSearchResults(filtered);
+  SearchModule.render();
 }
 
-function renderSearchResults() {
-  resultsListEl.innerHTML = "";
-  resultCountEl.textContent = `${state.searchResults.length} 筆`;
-  state.searchResults.forEach((entry) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<strong>#${entry.gridId} ${entry.gridTitle}</strong><br />${entry.snippet}`;
-    li.addEventListener("click", () => {
-      jumpToGrid(entry.gridId);
-      const element = detailPanelEl.querySelector(`[data-segment-id="${entry.segment_id}"]`);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-        element.classList.add("highlight");
-        setTimeout(() => element.classList.remove("highlight"), 1500);
-      }
-    });
-    resultsListEl.appendChild(li);
-  });
-}
+// Render functions moved to separate modules
 
 async function openLogModal(segmentId) {
   try {
-    const response = await fetch(`${API_BASE}/segments/${segmentId}/log`);
-    if (!response.ok) {
-      throw new Error("log fetch failed");
-    }
-    const data = await response.json();
-    renderLogList(data.history);
+    const data = await fetchSegmentLog(segmentId);
+    renderLogList(logListEl, data.history);
   } catch (error) {
     console.warn("log 取得失敗，改用預設資料");
-    renderLogList([
+    renderLogList(logListEl, [
       { action: "inserted", similarity: 0.4, comment: "新段落寫入" },
       { action: "merged", similarity: 0.9, comment: "與既有摘要相似" },
     ]);
   }
   logModalEl.classList.add("visible");
-}
-
-function renderLogList(entries) {
-  logListEl.innerHTML = entries
-    .map(
-      (log) => `
-        <li>
-          <strong>${log.action}</strong>
-          <span>similarity ${log.similarity}</span>
-          <p>${log.comment || ""}</p>
-        </li>
-      `
-    )
-    .join("");
 }
 
 closeModalBtn.addEventListener("click", () => logModalEl.classList.remove("visible"));
@@ -539,33 +273,16 @@ async function handleSegmentSubmit(event) {
   segmentSubmitButton.disabled = true;
   setSegmentStatus("分類中...", "info");
   try {
-    const response = await fetch(`${API_BASE}/segments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ segments }),
-    });
-    if (!response.ok) {
-      let message = "分類服務回傳錯誤";
-      try {
-        const errorPayload = await response.json();
-        message = errorPayload.error || JSON.stringify(errorPayload);
-      } catch {
-        // ignore
-      }
-      setSegmentStatus(message, "error");
-      pushToast(message, "error");
-      return;
-    }
-    const result = await response.json();
+    const result = await postSegments(segments);
     setSegmentStatus(`完成，上傳 ${segments.length} 段`, "success");
     pushToast(`已新增 ${segments.length} 段洞察`, "success");
     const preview = segments[0]?.text?.split("\n")[0] || "";
     if (preview) {
       pushToast(`首段：${preview.slice(0, 40)}${preview.length > 40 ? "…" : ""}`, "info");
     }
-    state.recentSegmentIds = new Set(segments.map((seg) => seg.segment_id));
+    addRecentSegments(segments.map((seg) => seg.segment_id));
     scheduleFreshClear();
-    renderIngestResults(result.results || []);
+    SegmentModule.renderResults(result.results || []);
     segmentTextInput.value = "";
     await loadGrids();
     MandalaModule.render();
@@ -602,53 +319,18 @@ function pushToast(message, type = "info", duration = 4000) {
   setTimeout(() => toast.remove(), duration);
 }
 
-function gridHasFreshEntries(grid) {
-  if (!grid || !grid.entries) {
-    return false;
-  }
-  return grid.entries.some((entry) => state.recentSegmentIds.has(entry.segment_id));
-}
-
-function gridHasNeedsReview(grid) {
-  if (!grid) return false;
-  const list = grid.needsReview || grid.needs_review || [];
-  return list.length > 0;
-}
+// gridHasFreshEntries and gridHasNeedsReview are imported from store.js
 
 function scheduleFreshClear() {
-  if (state.clearFreshTimer) {
-    clearTimeout(state.clearFreshTimer);
-  }
-  state.clearFreshTimer = setTimeout(() => {
-    state.recentSegmentIds.clear();
-    MandalaModule.render();
-  }, 8000);
+  setClearFreshTimer(setTimeout(() => {
+    import("./store.js").then(({ clearRecentSegments }) => {
+      clearRecentSegments();
+      MandalaModule.render();
+    });
+  }, 8000));
 }
 
-function renderIngestResults(results) {
-  if (!ingestResultsEl || !ingestTableBodyEl) return;
-  if (!results.length) {
-    ingestResultsEl.classList.add("hidden");
-    ingestTableBodyEl.innerHTML = "";
-    return;
-  }
-  ingestResultsEl.classList.remove("hidden");
-  ingestTableBodyEl.innerHTML = results
-    .map(
-      (item, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${(item.snippet || "").slice(0, 60)}</td>
-          <td>#${item.grid_id}</td>
-          <td class="status-${item.status}">${item.status}</td>
-          <td>${item.summary_notes || ""}</td>
-          <td>${item.classifier || ""}</td>
-          <td>${item.error || ""}</td>
-        </tr>
-      `
-    )
-    .join("");
-}
+// Render functions moved to separate modules
 
 const fallbackGrids = {
   grids: [

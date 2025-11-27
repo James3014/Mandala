@@ -5,10 +5,11 @@
 ## 目錄總覽
 ```
 Mandala/
-├─ linus_app/           # 後端核心模組（classifier、integrator、summary、service、persistence）
-├─ frontend/            # 單頁應用（Vanilla JS + CSS）
+├─ linus_app/           # 後端核心模組（classifier、integrator、summary、service、storage、views）
+├─ frontend/            # 模組化前端（api.js、store.js、renderBoard.js、renderDetail.js 等）
 ├─ serve.py             # Dev server；同時提供靜態檔與 /api/* 端點
 ├─ tests/               # pytest 單元測試
+├─ .env.example         # 環境變數範例
 └─ doc/                 # SDD / API / 測試 / 前端規格文件
 ```
 
@@ -22,12 +23,14 @@ Mandala/
    ```
 4. 設定分類器與儲存位置：
    - **預設分類器**：若未設定任何 API Key，會使用關鍵字 rule-based 分類（精度較低）。
-   - **啟用 Gemini**：在環境變數加入 `GEMINI_API_KEY=<your-key>`，程式會改用 Gemini 模型（預設 `GEMINI_MODEL=gemini-2.0-flash`，可自行修改）。範例：
+   - **啟用 Gemini**：複製 `.env.example` 為 `.env`，填入你的 `GEMINI_API_KEY`。程式會改用 Gemini 模型（預設 `gemini-3.0-pro`；可選 `gemini-2.5-pro`、`gemini-2.5-flash`）。範例：
      ```bash
      export GEMINI_API_KEY=your_key_here
-     export GEMINI_MODEL=gemini-2.0-flash
+     export GEMINI_MODEL=gemini-3.0-pro
      ```
-   - **資料儲存**：所有 summary/entries/logs 會寫入 `data/linus_state.json`。可用 `LINUS_STATE_PATH=/persistent/linus_state.json` 指到永久磁碟，確保重啟後仍能還原。
+     若 Gemini 呼叫失敗，系統會自動降級到 rule-based 並在 UI 顯示錯誤訊息。
+   - **資料儲存**：所有 summary/entries/logs 會寫入 `LINUS_STATE_PATH` 指定的檔案（預設 `data/linus_state.json`）。可設定 `LINUS_STATE_PATH=/persistent/linus_state.json` 指到永久磁碟，確保重啟後仍能還原。
+   - **儲存延遲**：`LINUS_SAVE_DEBOUNCE=0.5`（秒）可調整寫檔防抖時間，避免頻繁寫入。
 
 5. 啟動前後端整合伺服器：
    ```bash
@@ -67,7 +70,8 @@ Mandala/
 
 - **9×9 總覽**與**單宮模式**共用同一份 `mandala` 定義（`linus_app/mandala_blueprint.py`），確保畫面與 API 同步。  
 - 伺服器會把資料持久化到 `data/linus_state.json`（可用 `LINUS_STATE_PATH` 指到持久磁碟）；重啟後仍可從該檔案還原所有格子與 InsightLog。
+- **前端模組化**：`frontend/` 拆分為 `api.js`（API 呼叫）、`store.js`（狀態管理）、`renderBoard.js`（九宮格渲染）、`renderDetail.js`（詳細面板）、`renderIngest.js`（貼文結果）、`renderSearch.js`（搜尋功能）、`actions.js`（使用者操作），方便維護與擴充。
 - 若要持久化資料，可將 `GridCell.entries`、`InsightLog` 改寫入資料庫，再於 `LinusService` 讀寫。  
-- 前端沒有框架，相依極少；若要改用 React/Vite，可把 `frontend/app.js` 的邏輯移植成 Hook/Store，再保留同樣的 API 介面。
+- 若要改用 React/Vite，可把前端模組邏輯移植成 Hook/Component，保留同樣的 API 介面。
 
 如需更多細節（SDD、測試計畫、前端需求），請參閱 `doc/` 目录。Happy shipping!
