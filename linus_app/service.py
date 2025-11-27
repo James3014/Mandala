@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List
 
 from .classifier import ClassificationError, build_classifier
@@ -12,6 +14,7 @@ from .config import GRID_DEFINITIONS
 from .integrator import GridIntegrator
 from .mandala_blueprint import get_mandala
 from .models import GridAssignment, Segment
+from .storage import PersistentStore
 
 
 class LinusService:
@@ -19,6 +22,9 @@ class LinusService:
         self._classifier, self._fallback_classifier = build_classifier()
         self._using_gemini = self._classifier is not self._fallback_classifier
         self._integrator = GridIntegrator(GRID_DEFINITIONS)
+        state_path = Path(os.getenv("LINUS_STATE_PATH", "data/linus_state.json"))
+        self._store = PersistentStore(state_path)
+        self._store.hydrate(self._integrator.cells, self._integrator.logs)
 
     def post_segments(self, payload: Dict) -> Dict:
         segments = payload.get("segments", [])
@@ -38,7 +44,6 @@ class LinusService:
                         "related_keywords": assignment.related_keywords,
                     }
                     for assignment in assignments
-                    for assignment in assignments
                 ],
                 "snippet": segment.text.replace("\n", " ")[:80],
                 "classifier": classifier_used,
@@ -47,6 +52,7 @@ class LinusService:
                 result_payload["error"] = classifier_error
             result_payload.update(self._augment_outcome(outcome, classifier_error))
             results.append(result_payload)
+        self._store.save(self._integrator.cells, self._integrator.logs)
         return {"results": results}
 
     def get_grid(self, grid_id: int) -> Dict:

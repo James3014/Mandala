@@ -3,14 +3,24 @@ from unittest import mock
 
 import json
 import os
+from pathlib import Path
 from unittest import mock
+
+import pytest
 
 from linus_app import LinusService
 
 
-def test_post_segments_classifies_and_updates_grid():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        service = LinusService()
+@pytest.fixture(autouse=True)
+def isolated_store(tmp_path, monkeypatch):
+    state_path = tmp_path / "linus_state.json"
+    monkeypatch.setenv("LINUS_STATE_PATH", str(state_path))
+    yield
+
+
+def test_post_segments_classifies_and_updates_grid(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
     payload = {
         "segments": [
             {
@@ -35,9 +45,9 @@ def test_post_segments_classifies_and_updates_grid():
     assert 3 <= len(grid["summary"]) <= 5
 
 
-def test_duplicate_segments_merge_instead_of_duplication():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        service = LinusService()
+def test_duplicate_segments_merge_instead_of_duplication(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
     base = {
         "source": "meeting-2024-09-20",
         "text": "合約 SOW 條款需要立即補進合作文件中。",
@@ -65,9 +75,9 @@ def test_duplicate_segments_merge_instead_of_duplication():
     assert log["history"][0]["action"] == "merged"
 
 
-def test_low_confidence_segments_are_flagged_for_review():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        service = LinusService()
+def test_low_confidence_segments_are_flagged_for_review(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
     response = service.post_segments(
         {
             "segments": [
@@ -87,9 +97,9 @@ def test_low_confidence_segments_are_flagged_for_review():
     assert any(item["segment_id"] == "seg-review" for item in grid["needs_review"])
 
 
-def test_summary_stays_within_three_and_five_bullets():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        service = LinusService()
+def test_summary_stays_within_three_and_five_bullets(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
     service.post_segments(
         {
             "segments": [
@@ -105,23 +115,23 @@ def test_summary_stays_within_three_and_five_bullets():
     assert 3 <= len(grid["summary"]) <= 5
 
 
-def test_segment_logs_are_traceable():
-    with mock.patch.dict(os.environ, {}, clear=True):
-        service = LinusService()
-        service.post_segments(
-            {
-                "segments": [
-                    {
-                        "segment_id": "seg-agr",
-                        "source": "meeting",
-                        "text": "SOW 條款需要補上。",
-                    }
-                ]
-            }
-        )
-        log = service.get_segment_log("seg-agr")
-        assert log["segment_id"] == "seg-agr"
-        assert log["history"][0]["action"] == "inserted"
+def test_segment_logs_are_traceable(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
+    service.post_segments(
+        {
+            "segments": [
+                {
+                    "segment_id": "seg-agr",
+                    "source": "meeting",
+                    "text": "SOW 條款需要補上。",
+                }
+            ]
+        }
+    )
+    log = service.get_segment_log("seg-agr")
+    assert log["segment_id"] == "seg-agr"
+    assert log["history"][0]["action"] == "inserted"
 
 
 def test_gemini_classifier_bridge_parses_response(monkeypatch):
@@ -155,34 +165,61 @@ def test_gemini_classifier_bridge_parses_response(monkeypatch):
         def read(self):
             return json.dumps(fake_response).encode("utf-8")
 
-    with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "fake-key"}):
-        with mock.patch("linus_app.classifier.request.urlopen", return_value=DummyResponse()):
-            service = LinusService()
-            payload = {
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    with mock.patch("linus_app.classifier.request.urlopen", return_value=DummyResponse()):
+        service = LinusService()
+        payload = {
+            "segments": [
+                {
+                    "segment_id": "seg-mkt",
+                    "source": "meeting",
+                    "text": "品牌啟動會議鎖定冬季檔期。",
+                }
+            ]
+        }
+        response = service.post_segments(payload)
+        result = response["results"][0]
+        primary = result["grid_assignments"][0]
+        assert primary["grid_id"] == 7
+        assert primary["confidence"] == 0.9
+        service.post_segments(
+            {
                 "segments": [
                     {
-                        "segment_id": "seg-mkt",
+                        "segment_id": "seg-agr",
                         "source": "meeting",
-                        "text": "品牌啟動會議鎖定冬季檔期。",
+                        "text": "SOW 條款需要補上。",
                     }
                 ]
             }
-            response = service.post_segments(payload)
-            result = response["results"][0]
-            primary = result["grid_assignments"][0]
-            assert primary["grid_id"] == 7
-            assert primary["confidence"] == 0.9
-            service.post_segments(
+        )
+        log = service.get_segment_log("seg-agr")
+        assert log["segment_id"] == "seg-agr"
+        assert log["history"][0]["action"] == "inserted"
+
+
+def test_persistence_roundtrip(tmp_path, monkeypatch):
+    state_path = tmp_path / "linus_state.json"
+    monkeypatch.setenv("LINUS_STATE_PATH", str(state_path))
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    service = LinusService()
+    service.post_segments(
+        {
+            "segments": [
                 {
-                    "segments": [
-                        {
-                            "segment_id": "seg-agr",
-                            "source": "meeting",
-                            "text": "SOW 條款需要補上。",
-                        }
-                    ]
+                    "segment_id": "seg-demo",
+                    "source": "meeting",
+                    "text": "教練申請流程需要自動化審核。",
                 }
-            )
-            log = service.get_segment_log("seg-agr")
-            assert log["segment_id"] == "seg-agr"
-            assert log["history"][0]["action"] == "inserted"
+            ]
+        }
+    )
+    assert state_path.exists()
+    service2 = LinusService()
+    found = False
+    for grid_id in range(1, 10):
+        grid = service2.get_grid(grid_id)
+        if any(entry["segment_id"] == "seg-demo" for entry in grid["entries"]):
+            found = True
+            break
+    assert found
