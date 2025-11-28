@@ -1,22 +1,22 @@
 import { state } from "./store.js";
-import { getSegmentLog } from "./actions.js";
+import { fetchSegmentLog } from "./api.js";
 
 export function renderDetailPanel(detailPanelEl, grid, logModalEl, logListEl) {
-    if (!grid) {
-        detailPanelEl.innerHTML =
-            "<div class='placeholder'><h2>沒有資料</h2><p>請確認 API 是否回傳內容。</p></div>";
-        return;
-    }
-    detailPanelEl.innerHTML = `
+  if (!grid) {
+    detailPanelEl.innerHTML =
+      "<div class='placeholder'><h2>沒有資料</h2><p>請確認 API 是否回傳內容。</p></div>";
+    return;
+  }
+  detailPanelEl.innerHTML = `
     <header>
       <p class="grid-id">#${grid.gridId}</p>
       <h2>${grid.title}</h2>
       <p>
         ${grid.persona}
         ${grid.needsReview?.length
-            ? `<span class="detail-needs-review">需覆核 ${grid.needsReview.length}</span>`
-            : ""
-        }
+      ? `<span class="detail-needs-review">需覆核 ${grid.needsReview.length}</span>`
+      : ""
+    }
       </p>
     </header>
     <section>
@@ -39,28 +39,28 @@ export function renderDetailPanel(detailPanelEl, grid, logModalEl, logListEl) {
       </div>
       <ul class="needs-review-list">
         ${grid.needsReview.length
-            ? grid.needsReview.map(renderEntry).join("")
-            : "<li>無待覆核段落</li>"
-        }
+      ? grid.needsReview.map(renderEntry).join("")
+      : "<li>無待覆核段落</li>"
+    }
       </ul>
     </section>
     ${renderMandalaDetail(grid)}
   `;
 
-    detailPanelEl.querySelectorAll(".action-view-log").forEach((button) => {
-        button.addEventListener("click", () => openLogModal(button.dataset.segmentId, logModalEl, logListEl));
-    });
+  detailPanelEl.querySelectorAll(".action-view-log").forEach((button) => {
+    button.addEventListener("click", () => openLogModal(button.dataset.segmentId, logModalEl, logListEl));
+  });
 }
 
 function renderEntry(entry) {
-    const classes = ["entry"];
-    if (state.recentSegmentIds.has(entry.segment_id)) {
-        classes.push("fresh");
-    }
-    if (entry.status === "needs_review") {
-        classes.push("needs-review");
-    }
-    return `
+  const classes = ["entry"];
+  if (state.recentSegmentIds.has(entry.segment_id)) {
+    classes.push("fresh");
+  }
+  if (entry.status === "needs_review") {
+    classes.push("needs-review");
+  }
+  return `
     <li class="${classes.join(" ")}">
       <div>
         <p class="snippet">${entry.snippet}</p>
@@ -77,11 +77,11 @@ function renderEntry(entry) {
 }
 
 function renderMandalaDetail(grid) {
-    if (!grid.mandala || !grid.mandala.items?.length) {
-        return "";
-    }
+  if (!grid.mandala || !grid.mandala.items?.length) {
+    return "";
+  }
 
-    return `
+  return `
     <section class="mandala-section">
       <div class="section-header">
         <h3>曼陀羅展開</h3>
@@ -93,36 +93,44 @@ function renderMandalaDetail(grid) {
       </div>
       <div class="mandala-grid">
         ${grid.mandala.items
-            .map(
-                (item) => `
+      .map(
+        (item) => `
               <article class="mandala-item">
                 <h4>${item.title}</h4>
                 <p>${item.detail}</p>
               </article>
             `
-            )
-            .join("")}
+      )
+      .join("")}
       </div>
     </section>
   `;
 }
 
 async function openLogModal(segmentId, logModalEl, logListEl) {
-    const history = await getSegmentLog(segmentId);
-    renderLogList(logListEl, history);
-    logModalEl.classList.add("visible");
+  try {
+    const data = await fetchSegmentLog(segmentId);
+    renderLogList(logListEl, data.history);
+  } catch (error) {
+    console.warn("log 取得失敗，改用預設資料");
+    renderLogList(logListEl, [
+      { action: "inserted", similarity: 0.4, comment: "新段落寫入" },
+      { action: "merged", similarity: 0.9, comment: "與既有摘要相似" },
+    ]);
+  }
+  logModalEl.classList.add("visible");
 }
 
 function renderLogList(logListEl, entries) {
-    logListEl.innerHTML = entries
-        .map(
-            (log) => `
+  logListEl.innerHTML = entries
+    .map(
+      (log) => `
         <li>
           <strong>${log.action}</strong>
           <span>similarity ${log.similarity}</span>
           <p>${log.comment || ""}</p>
         </li>
       `
-        )
-        .join("");
+    )
+    .join("");
 }

@@ -2,7 +2,7 @@ import { state, setSearchResults } from "../store.js";
 import { renderSearchResults } from "../renderSearch.js";
 
 export const SearchModule = {
-    filter: (searchInputEl, gridFilterEl, statusFilterEl, resultsListEl, resultCountEl, detailPanelEl) => {
+    filter: (searchInputEl, gridFilterEl, statusFilterEl, resultsListEl, resultCountEl, detailPanelEl, onNavigate) => {
         const keyword = searchInputEl.value.trim().toLowerCase();
         const gridFilter = gridFilterEl.value;
         const statusFilter = statusFilterEl.value;
@@ -31,6 +31,6 @@ export const SearchModule = {
         }
 
         setSearchResults(filtered);
-        renderSearchResults(resultsListEl, resultCountEl, detailPanelEl);
+        renderSearchResults(resultsListEl, resultCountEl, detailPanelEl, onNavigate);
     },
 };

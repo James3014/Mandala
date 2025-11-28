@@ -41,6 +41,7 @@ export function setCurrentGridId(gridId) {
 }
 
 export function setViewMode(mode) {
+    console.log(`[setViewMode] Changing viewMode from '${state.viewMode}' to '${mode}'`);
     state.viewMode = mode;
     notify();
 }

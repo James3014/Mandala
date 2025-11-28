@@ -105,6 +105,7 @@ function populateGridFilter() {
 }
 
 function render() {
+  console.log(`[render] Current viewMode: '${state.viewMode}'`);
   if (state.viewMode === "single") {
     appBodyEl.classList.remove("overview-mode");
     gridBoardEl.classList.remove("hidden");
@@ -115,6 +116,7 @@ function render() {
     MandalaModule.renderBoard();
     MandalaModule.renderDetail();
   } else {
+    console.log("[render] Switch to overview mode");
     appBodyEl.classList.add("overview-mode");
     gridBoardEl.classList.add("hidden");
     overviewBoardEl.classList.remove("hidden");
@@ -131,7 +133,11 @@ function setViewModeHandler(mode) {
 }
 
 function handleSearch() {
-  SearchModule.filter(searchInputEl, gridFilterEl, statusFilterEl, resultsListEl, resultCountEl, detailPanelEl);
+  const handleNavigate = (targetGridId) => {
+    NavigationModule.jumpToGrid(targetGridId);
+    MandalaModule.render();
+  };
+  SearchModule.filter(searchInputEl, gridFilterEl, statusFilterEl, resultsListEl, resultCountEl, detailPanelEl, handleNavigate);
 }
 
 // Log Modal Logic (kept here for now as it interacts with DOM directly and is simple)

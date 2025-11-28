@@ -132,14 +132,15 @@ function buildMiniCells(grid, mandala) {
     for (let slot = 1; slot <= 9; slot++) {
         if (slot === 5) {
             cells.push(
-                `<div class="mini-cell center"><strong>${grid.gridId}</strong><span>${mandala.centerTitle || grid.title}</span></div>`
+                `<div class="mini-cell center"><strong>${grid.gridId}</strong><span>${escapeHtml(mandala.centerTitle || grid.title)}</span></div>`
             );
         } else {
             const itemIndex = slot < 5 ? slot - 1 : slot - 2;
             const item = mandala.items[itemIndex];
             if (item) {
+                const truncatedDetail = item.detail.length > 50 ? item.detail.substring(0, 50) + '…' : item.detail;
                 cells.push(
-                    `<div class="mini-cell"><strong>${item.title}</strong><span>${item.detail}</span></div>`
+                    `<div class="mini-cell"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(truncatedDetail)}</span></div>`
                 );
             } else {
                 cells.push('<div class="mini-cell"></div>');
@@ -147,4 +148,10 @@ function buildMiniCells(grid, mandala) {
         }
     }
     return cells;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

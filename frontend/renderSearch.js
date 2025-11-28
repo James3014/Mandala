@@ -1,14 +1,18 @@
 import { state } from "./store.js";
-import { jumpToGrid } from "./actions.js";
+import { NavigationModule } from "./modules/navigation.js";
 
-export function renderSearchResults(resultsListEl, resultCountEl, detailPanelEl) {
+export function renderSearchResults(resultsListEl, resultCountEl, detailPanelEl, onNavigate) {
     resultsListEl.innerHTML = "";
     resultCountEl.textContent = `${state.searchResults.length} 筆`;
     state.searchResults.forEach((entry) => {
         const li = document.createElement("li");
         li.innerHTML = `<strong>#${entry.gridId} ${entry.gridTitle}</strong><br />${entry.snippet}`;
         li.addEventListener("click", () => {
-            jumpToGrid(entry.gridId);
+            if (onNavigate) {
+                onNavigate(entry.gridId);
+            } else {
+                NavigationModule.jumpToGrid(entry.gridId);
+            }
             // Wait for render to complete then scroll
             setTimeout(() => {
                 const element = detailPanelEl.querySelector(`[data-segment-id="${entry.segment_id}"]`);
