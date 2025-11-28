@@ -6,11 +6,12 @@ export async function loadGrids() {
     try {
         console.log("正在嘗試從 API 載入資料...");
         const data = await fetchGrids();
-        if (data && data.grids) {
-            console.log("API 資料載入成功");
+        if (data && data.grids && data.grids.length > 0) {
+            console.log("API 資料載入成功，共", data.grids.length, "筆");
             setGrids(data.grids.map(normalizeGrid));
         } else {
-            throw new Error("API 回傳格式錯誤");
+            console.warn("API 回傳資料為空，改用內建假資料");
+            setGrids(fallbackGrids.grids);
         }
     } catch (error) {
         console.warn(
