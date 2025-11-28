@@ -104,50 +104,78 @@ function buildMandala(grid) {
 }
 
 export function renderOverviewBoard(overviewBoardEl) {
+    console.log("[renderOverviewBoard] 渲染 9×9 曼陀羅總覽");
     overviewBoardEl.innerHTML = "";
-    const ordered = [...state.grids].sort((a, b) => a.gridId - b.gridId);
 
-    ordered.forEach((grid) => {
-        const mandala = buildMandala(grid);
-        const article = document.createElement("article");
-        article.className = "overview-mandala";
-        if (gridHasFreshEntries(grid)) {
-            article.classList.add("fresh");
+    // Find the root grid (gridId = 5, SKiDIY 核心目標)
+    const rootGrid = state.grids.find(g => g.gridId === ROOT_GRID_ID);
+    if (!rootGrid || !rootGrid.mandala) {
+        overviewBoardEl.innerHTML = '<div class="error">無法載入中心主題</div>';
+        return;
+    }
+
+    const container = document.createElement("div");
+    container.className = "full-mandala-grid";
+
+    // 9x9 layout: each position contains either center or a sub-grid
+    for (let bigSlot = 1; bigSlot <= 9; bigSlot++) {
+        const bigCell = document.createElement("div");
+        bigCell.className = "mandala-big-cell";
+
+        if (bigSlot === 5) {
+            // Center: root grid itself
+            bigCell.classList.add("center-cell");
+            bigCell.innerHTML = `
+                <div class="big-cell-header">#${rootGrid.gridId} ${rootGrid.mandala.centerTitle}</div>
+                <div class="big-cell-content">${escapeHtml(rootGrid.mandala.center)}</div>
+            `;
+        } else {
+            // Outer cells: each displays a sub-grid (9 mini cells)
+            const itemIndex = bigSlot < 5 ? bigSlot - 1 : bigSlot - 2;
+            const item = rootGrid.mandala.items[itemIndex];
+
+            if (item && item.targetGridId) {
+                const subGrid = state.grids.find(g => g.gridId === item.targetGridId);
+                if (subGrid) {
+                    bigCell.innerHTML = renderSubGrid(subGrid);
+                    if (gridHasFreshEntries(subGrid)) {
+                        bigCell.classList.add("fresh");
+                    }
+                    if (gridHasNeedsReview(subGrid)) {
+                        bigCell.classList.add("has-review");
+                    }
+                }
+            }
         }
-        if (gridHasNeedsReview(grid)) {
-            article.classList.add("has-review");
-        }
-        article.innerHTML = `
-      <h3>#${grid.gridId} ${grid.title}</h3>
-      <div class="mini-grid">
-        ${buildMiniCells(grid, mandala).join("")}
-      </div>
-    `;
-        overviewBoardEl.appendChild(article);
-    });
+
+        container.appendChild(bigCell);
+    }
+
+    overviewBoardEl.appendChild(container);
 }
 
-function buildMiniCells(grid, mandala) {
-    const cells = [];
+function renderSubGrid(grid) {
+    const mandala = buildMandala(grid);
+    let html = `<div class="big-cell-header">#${grid.gridId} ${grid.title}</div>`;
+    html += '<div class="mini-grid-9">';
+
     for (let slot = 1; slot <= 9; slot++) {
         if (slot === 5) {
-            cells.push(
-                `<div class="mini-cell center"><strong>${grid.gridId}</strong><span>${escapeHtml(mandala.centerTitle || grid.title)}</span></div>`
-            );
+            html += `<div class="mini-cell center"><strong>${grid.gridId}</strong><span>${escapeHtml(mandala.centerTitle || grid.title)}</span></div>`;
         } else {
             const itemIndex = slot < 5 ? slot - 1 : slot - 2;
             const item = mandala.items[itemIndex];
             if (item) {
-                const truncatedDetail = item.detail.length > 50 ? item.detail.substring(0, 50) + '…' : item.detail;
-                cells.push(
-                    `<div class="mini-cell"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(truncatedDetail)}</span></div>`
-                );
+                const truncatedTitle = item.title.length > 15 ? item.title.substring(0, 15) + '…' : item.title;
+                html += `<div class="mini-cell"><span class="mini-title">${escapeHtml(truncatedTitle)}</span></div>`;
             } else {
-                cells.push('<div class="mini-cell"></div>');
+                html += '<div class="mini-cell empty"></div>';
             }
         }
     }
-    return cells;
+
+    html += '</div>';
+    return html;
 }
 
 function escapeHtml(text) {
