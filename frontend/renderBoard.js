@@ -1,16 +1,19 @@
 import { state, getGrid, gridHasFreshEntries, gridHasNeedsReview } from "./store.js";
 import { NavigationModule } from "./modules/navigation.js";
 
-export function renderMandalaBoard(gridBoardEl, detailPanelEl) {
+export function renderMandalaBoard(gridBoardEl, detailPanelEl, onNavigate) {
+    console.log("[renderMandalaBoard] 開始渲染，currentGridId:", state.currentGridId);
     gridBoardEl.innerHTML = "";
     const template = document.getElementById("gridCardTemplate");
     const grid = getGrid(state.currentGridId);
 
     if (!grid) {
+        console.warn("[renderMandalaBoard] 無法取得grid资料，currentGridId:", state.currentGridId, "state.grids:", state.grids);
         renderEmptyState(gridBoardEl, detailPanelEl);
         return;
     }
 
+    console.log("[renderMandalaBoard] 成功取得grid:", grid.title);
     const mandala = buildMandala(grid);
 
     for (let slot = 1; slot <= 9; slot++) {
@@ -21,11 +24,12 @@ export function renderMandalaBoard(gridBoardEl, detailPanelEl) {
         if (slot === 5) {
             renderCenterCard(card, clone, grid, mandala);
         } else {
-            renderItemCard(card, clone, slot, mandala);
+            renderItemCard(card, clone, slot, mandala, onNavigate);
         }
 
         gridBoardEl.appendChild(clone);
     }
+    console.log("[renderMandalaBoard] 渲染完成，已加入", gridBoardEl.children.length, "個格子");
 }
 
 function renderEmptyState(gridBoardEl, detailPanelEl) {
@@ -47,7 +51,7 @@ function renderCenterCard(card, clone, grid, mandala) {
     }
 }
 
-function renderItemCard(card, clone, slot, mandala) {
+function renderItemCard(card, clone, slot, mandala, onNavigate) {
     // Calculate item index: Slots 1-4 map to 0-3, Slots 6-9 map to 4-7
     const itemIndex = slot < 5 ? slot - 1 : slot - 2;
     const item = mandala.items[itemIndex];
@@ -59,8 +63,8 @@ function renderItemCard(card, clone, slot, mandala) {
         clone.querySelector(".grid-detail").textContent = item.detail;
         clone.querySelector(".grid-note").textContent = item.targetGridId ? "點擊展開" : "";
 
-        if (item.targetGridId) {
-            card.addEventListener("click", () => NavigationModule.drillDown(item.targetGridId));
+        if (item.targetGridId && onNavigate) {
+            card.addEventListener("click", () => onNavigate(item.targetGridId));
             const targetGrid = getGrid(item.targetGridId);
             updateReviewStatus(card, targetGrid);
             if (targetGrid && gridHasFreshEntries(targetGrid)) {

@@ -41,14 +41,22 @@ const ingestTableBodyEl = document.getElementById("ingestTableBody");
 
 const MandalaModule = {
   render: render,
-  renderBoard: () => renderMandalaBoard(gridBoardEl, detailPanelEl),
+  renderBoard: () => {
+    const handleNavigate = (targetGridId) => {
+      NavigationModule.drillDown(targetGridId);
+      MandalaModule.render();
+    };
+    renderMandalaBoard(gridBoardEl, detailPanelEl, handleNavigate);
+  },
   renderOverview: () => renderOverviewBoard(overviewBoardEl),
   renderDetail: () => renderDetailPanel(detailPanelEl, getGrid(state.currentGridId), logModalEl, logListEl),
   updateControls: () => NavigationModule.updateControls(breadcrumbEl),
 };
 
 async function init() {
+  console.log("[init] 開始初始化");
   await loadGrids();
+  console.log("[init] loadGrids 完成，state.grids.length:", state.grids.length);
   populateGridFilter();
 
   // Event Listeners
