@@ -283,8 +283,8 @@ body {
 /* Responsive Grid Board */
 .grid-board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(80px, 1fr));
+  grid-template-rows: repeat(3, minmax(80px, 1fr));
   gap: 0.5rem;
   width: 100%;
   max-width: 600px;
