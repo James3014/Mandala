@@ -1,4 +1,4 @@
-import { state, getGrid, gridHasFreshEntries, gridHasNeedsReview } from "./store.js";
+import { state, getGrid, gridHasFreshEntries, gridHasNeedsReview, ROOT_GRID_ID } from "./store.js";
 import { NavigationModule } from "./modules/navigation.js";
 
 export function renderMandalaBoard(gridBoardEl, detailPanelEl, onNavigate) {
