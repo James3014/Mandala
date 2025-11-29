@@ -1,5 +1,5 @@
 import {
-    state,
+    getState,
     pushToStack,
     setCurrentGridId,
     popFromStack,
@@ -11,7 +11,7 @@ import {
 
 export const NavigationModule = {
     drillDown: (targetGridId) => {
-        pushToStack(state.currentGridId);
+        pushToStack(getState().currentGridId);
         setCurrentGridId(targetGridId);
     },
 
