@@ -14,31 +14,33 @@ import { SearchModule } from "./modules/search.js";
 import { NavigationModule } from "./modules/navigation.js";
 import { SegmentModule } from "./modules/segment.js";
 
-// DOM Elements
-const appBodyEl = document.querySelector(".app-body");
-const gridBoardEl = document.getElementById("gridBoard");
-const overviewBoardEl = document.getElementById("overviewBoard");
-const detailPanelEl = document.getElementById("detailPanel");
-const gridFilterEl = document.getElementById("gridFilter");
-const statusFilterEl = document.getElementById("statusFilter");
-const searchInputEl = document.getElementById("searchInput");
-const resultCountEl = document.getElementById("resultCount");
-const resultsListEl = document.getElementById("resultsList");
-const logModalEl = document.getElementById("logModal");
-const logListEl = document.getElementById("logList");
-const closeModalBtn = document.getElementById("closeModal");
-const backButtonEl = document.getElementById("backButton");
-const breadcrumbEl = document.getElementById("mandalaBreadcrumb");
-const viewModeInputs = document.querySelectorAll('input[name="viewMode"]');
-const segmentFormEl = document.getElementById("segmentForm");
-const segmentFormSectionEl = document.querySelector(".segment-form");
-const segmentSourceInput = document.getElementById("segmentSource");
-const segmentTextInput = document.getElementById("segmentText");
-const segmentStatusEl = document.getElementById("segmentStatus");
-const segmentSubmitButton = document.getElementById("segmentSubmit");
-const toastStackEl = document.getElementById("toastStack");
-const ingestResultsEl = document.getElementById("ingestResults");
-const ingestTableBodyEl = document.getElementById("ingestTableBody");
+// Centralized DOM Elements
+const DOM = {
+  appBody: document.querySelector(".app-body"),
+  gridBoard: document.getElementById("gridBoard"),
+  overviewBoard: document.getElementById("overviewBoard"),
+  detailPanel: document.getElementById("detailPanel"),
+  gridFilter: document.getElementById("gridFilter"),
+  statusFilter: document.getElementById("statusFilter"),
+  searchInput: document.getElementById("searchInput"),
+  resultCount: document.getElementById("resultCount"),
+  resultsList: document.getElementById("resultsList"),
+  logModal: document.getElementById("logModal"),
+  logList: document.getElementById("logList"),
+  closeModal: document.getElementById("closeModal"),
+  backButton: document.getElementById("backButton"),
+  breadcrumb: document.getElementById("mandalaBreadcrumb"),
+  viewModeInputs: document.querySelectorAll('input[name="viewMode"]'),
+  segmentForm: document.getElementById("segmentForm"),
+  segmentFormSection: document.querySelector(".segment-form"),
+  segmentSource: document.getElementById("segmentSource"),
+  segmentText: document.getElementById("segmentText"),
+  segmentStatus: document.getElementById("segmentStatus"),
+  segmentSubmit: document.getElementById("segmentSubmit"),
+  toastStack: document.getElementById("toastStack"),
+  ingestResults: document.getElementById("ingestResults"),
+  ingestTableBody: document.getElementById("ingestTableBody"),
+};
 
 const handleNavigate = (targetGridId) => {
   NavigationModule.drillDown(targetGridId);
@@ -47,10 +49,10 @@ const handleNavigate = (targetGridId) => {
 
 const MandalaModule = {
   render: render,
-  renderBoard: () => renderMandalaBoard(gridBoardEl, detailPanelEl, handleNavigate),
-  renderOverview: () => renderOverviewBoard(overviewBoardEl, handleNavigate),
-  renderDetail: () => renderDetailPanel(detailPanelEl, getGrid(state.currentGridId), logModalEl, logListEl),
-  updateControls: () => NavigationModule.updateControls(breadcrumbEl),
+  renderBoard: () => renderMandalaBoard(DOM.gridBoard, DOM.detailPanel, handleNavigate),
+  renderOverview: () => renderOverviewBoard(DOM.overviewBoard, handleNavigate),
+  renderDetail: () => renderDetailPanel(DOM.detailPanel, getGrid(state.currentGridId), DOM.logModal, DOM.logList),
+  updateControls: () => NavigationModule.updateControls(DOM.breadcrumb),
 };
 
 async function init() {
@@ -60,27 +62,27 @@ async function init() {
   populateGridFilter();
 
   // Event Listeners
-  viewModeInputs.forEach((input) =>
+  DOM.viewModeInputs.forEach((input) =>
     input.addEventListener("change", (event) => setViewModeHandler(event.target.value))
   );
 
-  if (segmentFormEl) {
-    segmentFormEl.addEventListener("submit", (e) => SegmentModule.submit(e, {
-      segmentTextInput,
-      segmentSourceInput,
-      segmentStatusEl,
-      segmentSubmitButton,
-      toastStackEl,
-      ingestResultsEl,
-      ingestTableBodyEl
+  if (DOM.segmentForm) {
+    DOM.segmentForm.addEventListener("submit", (e) => SegmentModule.submit(e, {
+      segmentTextInput: DOM.segmentText,
+      segmentSourceInput: DOM.segmentSource,
+      segmentStatusEl: DOM.segmentStatus,
+      segmentSubmitButton: DOM.segmentSubmit,
+      toastStackEl: DOM.toastStack,
+      ingestResultsEl: DOM.ingestResults,
+      ingestTableBodyEl: DOM.ingestTableBody
     }, { onRender: MandalaModule.render }));
   }
 
-  searchInputEl.addEventListener("input", handleSearch);
-  gridFilterEl.addEventListener("change", handleSearch);
-  statusFilterEl.addEventListener("change", handleSearch);
+  DOM.searchInput.addEventListener("input", handleSearch);
+  DOM.gridFilter.addEventListener("change", handleSearch);
+  DOM.statusFilter.addEventListener("change", handleSearch);
 
-  backButtonEl.addEventListener("click", () => {
+  DOM.backButton.addEventListener("click", () => {
     NavigationModule.handleBack();
     MandalaModule.render();
   });
@@ -100,30 +102,30 @@ function populateGridFilter() {
     const option = document.createElement("option");
     option.value = grid.gridId;
     option.textContent = `${grid.gridId} ${grid.title}`;
-    gridFilterEl.appendChild(option);
+    DOM.gridFilter.appendChild(option);
   });
 }
 
 function render() {
   console.log(`[render] Current viewMode: '${state.viewMode}'`);
   if (state.viewMode === "single") {
-    appBodyEl.classList.remove("overview-mode");
-    gridBoardEl.classList.remove("hidden");
-    overviewBoardEl.classList.add("hidden");
-    detailPanelEl.classList.remove("hidden");
-    segmentFormSectionEl.classList.remove("hidden");
-    backButtonEl.disabled =
+    DOM.appBody.classList.remove("overview-mode");
+    DOM.gridBoard.classList.remove("hidden");
+    DOM.overviewBoard.classList.add("hidden");
+    DOM.detailPanel.classList.remove("hidden");
+    DOM.segmentFormSection.classList.remove("hidden");
+    DOM.backButton.disabled =
       state.currentGridId === ROOT_GRID_ID && state.mandalaStack.length === 0;
     MandalaModule.renderBoard();
     MandalaModule.renderDetail();
   } else {
     console.log("[render] Switch to overview mode");
-    appBodyEl.classList.add("overview-mode");
-    gridBoardEl.classList.add("hidden");
-    overviewBoardEl.classList.remove("hidden");
-    detailPanelEl.classList.add("hidden");
-    segmentFormSectionEl.classList.add("hidden");
-    backButtonEl.disabled = true;
+    DOM.appBody.classList.add("overview-mode");
+    DOM.gridBoard.classList.add("hidden");
+    DOM.overviewBoard.classList.remove("hidden");
+    DOM.detailPanel.classList.add("hidden");
+    DOM.segmentFormSection.classList.add("hidden");
+    DOM.backButton.disabled = true;
     MandalaModule.renderOverview();
   }
   MandalaModule.updateControls();
@@ -139,22 +141,22 @@ function handleSearch() {
     NavigationModule.jumpToGrid(targetGridId);
     MandalaModule.render();
   };
-  SearchModule.filter(searchInputEl, gridFilterEl, statusFilterEl, resultsListEl, resultCountEl, detailPanelEl, handleNavigate);
+  SearchModule.filter(DOM.searchInput, DOM.gridFilter, DOM.statusFilter, DOM.resultsList, DOM.resultCount, DOM.detailPanel, handleNavigate);
 }
 
 // Log Modal Logic (kept here for now as it interacts with DOM directly and is simple)
 async function openLogModal(segmentId) {
   try {
     const data = await fetchSegmentLog(segmentId);
-    renderLogList(logListEl, data.history);
+    renderLogList(DOM.logList, data.history);
   } catch (error) {
     console.warn("log 取得失敗，改用預設資料");
-    renderLogList(logListEl, [
+    renderLogList(DOM.logList, [
       { action: "inserted", similarity: 0.4, comment: "新段落寫入" },
       { action: "merged", similarity: 0.9, comment: "與既有摘要相似" },
     ]);
   }
-  logModalEl.classList.add("visible");
+  DOM.logModal.classList.add("visible");
 }
 
 function renderLogList(container, history) {
@@ -169,10 +171,10 @@ function renderLogList(container, history) {
 // Expose openLogModal globally if needed by renderDetail
 window.openLogModal = openLogModal;
 
-closeModalBtn.addEventListener("click", () => logModalEl.classList.remove("visible"));
-logModalEl.addEventListener("click", (event) => {
-  if (event.target === logModalEl) {
-    logModalEl.classList.remove("visible");
+DOM.closeModal.addEventListener("click", () => DOM.logModal.classList.remove("visible"));
+DOM.logModal.addEventListener("click", (event) => {
+  if (event.target === DOM.logModal) {
+    DOM.logModal.classList.remove("visible");
   }
 });
 
