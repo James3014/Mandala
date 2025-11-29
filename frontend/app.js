@@ -49,7 +49,7 @@ const MandalaModule = {
     };
     renderMandalaBoard(gridBoardEl, detailPanelEl, handleNavigate);
   },
-  renderOverview: () => renderOverviewBoard(overviewBoardEl),
+  renderOverview: () => renderOverviewBoard(overviewBoardEl, handleNavigate),
   renderDetail: () => renderDetailPanel(detailPanelEl, getGrid(state.currentGridId), logModalEl, logListEl),
   updateControls: () => NavigationModule.updateControls(breadcrumbEl),
 };

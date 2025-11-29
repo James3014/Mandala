@@ -173,8 +173,8 @@ body {
 /* 9×9 Full Mandala Grid */
 .full-mandala-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(280px, 1fr));
-  grid-template-rows: repeat(3, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, minmax(300px, 1fr));
+  grid-template-rows: repeat(3, minmax(300px, 1fr));
   gap: 1rem;
   padding: 1.5rem;
   width: 100%;
@@ -198,6 +198,11 @@ body {
 .mandala-big-cell:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.mandala-big-cell[style*="cursor: pointer"]:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .mandala-big-cell.center-cell {

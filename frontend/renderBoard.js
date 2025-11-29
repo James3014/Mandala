@@ -103,7 +103,7 @@ function buildMandala(grid) {
     };
 }
 
-export function renderOverviewBoard(overviewBoardEl) {
+export function renderOverviewBoard(overviewBoardEl, onNavigate) {
     console.log("[renderOverviewBoard] 渲染 9×9 曼陀羅總覽");
     overviewBoardEl.innerHTML = "";
 
@@ -129,6 +129,10 @@ export function renderOverviewBoard(overviewBoardEl) {
                 <div class="big-cell-header">#${rootGrid.gridId} ${rootGrid.mandala.centerTitle}</div>
                 <div class="big-cell-content">${escapeHtml(rootGrid.mandala.center)}</div>
             `;
+            bigCell.style.cursor = "pointer";
+            bigCell.addEventListener("click", () => {
+                if (onNavigate) onNavigate(ROOT_GRID_ID);
+            });
         } else {
             // Outer cells: each displays a sub-grid (9 mini cells)
             const itemIndex = bigSlot < 5 ? bigSlot - 1 : bigSlot - 2;
@@ -138,6 +142,10 @@ export function renderOverviewBoard(overviewBoardEl) {
                 const subGrid = state.grids.find(g => g.gridId === item.targetGridId);
                 if (subGrid) {
                     bigCell.innerHTML = renderSubGrid(subGrid);
+                    bigCell.style.cursor = "pointer";
+                    bigCell.addEventListener("click", () => {
+                        if (onNavigate) onNavigate(item.targetGridId);
+                    });
                     if (gridHasFreshEntries(subGrid)) {
                         bigCell.classList.add("fresh");
                     }
