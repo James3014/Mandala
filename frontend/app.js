@@ -40,15 +40,14 @@ const toastStackEl = document.getElementById("toastStack");
 const ingestResultsEl = document.getElementById("ingestResults");
 const ingestTableBodyEl = document.getElementById("ingestTableBody");
 
+const handleNavigate = (targetGridId) => {
+  NavigationModule.drillDown(targetGridId);
+  MandalaModule.render();
+};
+
 const MandalaModule = {
   render: render,
-  renderBoard: () => {
-    const handleNavigate = (targetGridId) => {
-      NavigationModule.drillDown(targetGridId);
-      MandalaModule.render();
-    };
-    renderMandalaBoard(gridBoardEl, detailPanelEl, handleNavigate);
-  },
+  renderBoard: () => renderMandalaBoard(gridBoardEl, detailPanelEl, handleNavigate),
   renderOverview: () => renderOverviewBoard(overviewBoardEl, handleNavigate),
   renderDetail: () => renderDetailPanel(detailPanelEl, getGrid(state.currentGridId), logModalEl, logListEl),
   updateControls: () => NavigationModule.updateControls(breadcrumbEl),
