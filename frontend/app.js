@@ -52,6 +52,7 @@ function hideLoading() {
 }
 
 const handleNavigate = (targetGridId) => {
+  setViewMode("single");
   NavigationModule.drillDown(targetGridId);
   MandalaModule.render();
 };
@@ -123,6 +124,12 @@ function populateGridFilter() {
 function render() {
   const state = getState();
   console.log(`[render] Current viewMode: '${state.viewMode}'`);
+  
+  // Update radio buttons
+  DOM.viewModeInputs.forEach(input => {
+    input.checked = input.value === state.viewMode;
+  });
+  
   if (state.viewMode === "single") {
     DOM.appBody.classList.remove("overview-mode");
     DOM.gridBoard.classList.remove("hidden");
