@@ -1,6 +1,6 @@
 import { fetchSegmentLog } from "./api.js";
 import {
-  state,
+  getState,
   getGrid,
   setViewMode,
   ROOT_GRID_ID,
@@ -51,14 +51,14 @@ const MandalaModule = {
   render: render,
   renderBoard: () => renderMandalaBoard(DOM.gridBoard, DOM.detailPanel, handleNavigate),
   renderOverview: () => renderOverviewBoard(DOM.overviewBoard, handleNavigate),
-  renderDetail: () => renderDetailPanel(DOM.detailPanel, getGrid(state.currentGridId), DOM.logModal, DOM.logList),
+  renderDetail: () => renderDetailPanel(DOM.detailPanel, getGrid(getState().currentGridId), DOM.logModal, DOM.logList),
   updateControls: () => NavigationModule.updateControls(DOM.breadcrumb),
 };
 
 async function init() {
   console.log("[init] 開始初始化");
   await loadGrids();
-  console.log("[init] loadGrids 完成，state.grids.length:", state.grids.length);
+  console.log("[init] loadGrids 完成，state.grids.length:", getState().grids.length);
   populateGridFilter();
 
   // Event Listeners
@@ -98,7 +98,7 @@ subscribe(() => {
 });
 
 function populateGridFilter() {
-  state.grids.forEach((grid) => {
+  getState().grids.forEach((grid) => {
     const option = document.createElement("option");
     option.value = grid.gridId;
     option.textContent = `${grid.gridId} ${grid.title}`;
@@ -107,6 +107,7 @@ function populateGridFilter() {
 }
 
 function render() {
+  const state = getState();
   console.log(`[render] Current viewMode: '${state.viewMode}'`);
   if (state.viewMode === "single") {
     DOM.appBody.classList.remove("overview-mode");

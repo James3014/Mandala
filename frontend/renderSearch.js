@@ -1,7 +1,8 @@
-import { state } from "./store.js";
+import { getState } from "./store.js";
 import { NavigationModule } from "./modules/navigation.js";
 
 export function renderSearchResults(resultsListEl, resultCountEl, detailPanelEl, onNavigate) {
+    const state = getState();
     resultsListEl.innerHTML = "";
     resultCountEl.textContent = `${state.searchResults.length} 筆`;
     state.searchResults.forEach((entry) => {

@@ -1,7 +1,8 @@
-import { state, getGrid, gridHasFreshEntries, gridHasNeedsReview, ROOT_GRID_ID } from "./store.js";
+import { state, getGrid, gridHasFreshEntries, gridHasNeedsReview, ROOT_GRID_ID, getState } from "./store.js";
 import { NavigationModule } from "./modules/navigation.js";
 
 export function renderMandalaBoard(gridBoardEl, detailPanelEl, onNavigate) {
+    const state = getState();
     console.log("[renderMandalaBoard] 開始渲染，currentGridId:", state.currentGridId);
     gridBoardEl.innerHTML = "";
     const template = document.getElementById("gridCardTemplate");
@@ -107,7 +108,7 @@ export function renderOverviewBoard(overviewBoardEl, onNavigate) {
     console.log("[renderOverviewBoard] 渲染 9×9 曼陀羅總覽");
     overviewBoardEl.innerHTML = "";
 
-    const rootGrid = state.grids.find(g => g.gridId === ROOT_GRID_ID);
+    const rootGrid = getState().grids.find(g => g.gridId === ROOT_GRID_ID);
     if (!rootGrid || !rootGrid.mandala) {
         overviewBoardEl.innerHTML = '<div class="error">無法載入中心主題</div>';
         return;
@@ -143,7 +144,7 @@ function renderBigCell(bigSlot, rootGrid, onNavigate) {
         const item = rootGrid.mandala.items[itemIndex];
 
         if (item && item.targetGridId) {
-            const subGrid = state.grids.find(g => g.gridId === item.targetGridId);
+            const subGrid = getState().grids.find(g => g.gridId === item.targetGridId);
             if (subGrid) {
                 bigCell.innerHTML = renderSubGrid(subGrid);
                 bigCell.style.cursor = "pointer";

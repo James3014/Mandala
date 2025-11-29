@@ -1,4 +1,4 @@
-import { state } from "./store.js";
+import { getState } from "./store.js";
 import { fetchSegmentLog } from "./api.js";
 
 export function renderDetailPanel(detailPanelEl, grid, logModalEl, logListEl) {
@@ -54,7 +54,7 @@ export function renderDetailPanel(detailPanelEl, grid, logModalEl, logListEl) {
 
 function renderEntry(entry) {
   const classes = ["entry"];
-  if (state.recentSegmentIds.has(entry.segment_id)) {
+  if (getState().recentSegmentIds.has(entry.segment_id)) {
     classes.push("fresh");
   }
   if (entry.status === "needs_review") {

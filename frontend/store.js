@@ -10,8 +10,8 @@ const initialState = {
     clearFreshTimer: null,
 };
 
-// Simple reactive state
-export const state = { ...initialState };
+// Simple reactive state with immutability
+let state = { ...initialState };
 
 const listeners = new Set();
 
@@ -24,61 +24,67 @@ function notify() {
     listeners.forEach((listener) => listener(state));
 }
 
+function updateState(updates) {
+    state = { ...state, ...updates };
+    notify();
+}
+
 // --- Actions ---
 
 export function setGrids(newGrids) {
-    state.grids = newGrids;
-    notify();
+    updateState({ grids: [...newGrids] });
 }
 
 export function getGrid(gridId) {
     return state.grids.find((item) => item.gridId === gridId);
 }
 
+export function getState() {
+    return state;
+}
+
 export function setCurrentGridId(gridId) {
-    state.currentGridId = gridId;
-    notify();
+    updateState({ currentGridId: gridId });
 }
 
 export function setViewMode(mode) {
     console.log(`[setViewMode] Changing viewMode from '${state.viewMode}' to '${mode}'`);
-    state.viewMode = mode;
-    notify();
+    updateState({ viewMode: mode });
 }
 
 export function setSearchResults(results) {
-    state.searchResults = results;
-    notify();
+    updateState({ searchResults: [...results] });
 }
 
 export function addRecentSegments(segmentIds) {
-    state.recentSegmentIds = new Set([...state.recentSegmentIds, ...segmentIds]);
-    notify();
+    updateState({ recentSegmentIds: new Set([...state.recentSegmentIds, ...segmentIds]) });
 }
 
 export function clearRecentSegments() {
-    state.recentSegmentIds.clear();
-    notify();
+    updateState({ recentSegmentIds: new Set() });
 }
 
 export function setClearFreshTimer(timerId) {
     if (state.clearFreshTimer) {
         clearTimeout(state.clearFreshTimer);
     }
-    state.clearFreshTimer = timerId;
+    updateState({ clearFreshTimer: timerId });
 }
 
 // Stack Navigation
 export function pushToStack(gridId) {
-    state.mandalaStack.push(gridId);
+    updateState({ mandalaStack: [...state.mandalaStack, gridId] });
 }
 
 export function popFromStack() {
-    return state.mandalaStack.pop();
+    const stack = [...state.mandalaStack];
+    const popped = stack.pop();
+    updateState({ mandalaStack: stack });
+    return popped;
 }
 
 export function resetStack() {
-    state.mandalaStack = [];
+    updateState({ mandalaStack: [] });
 }
 
 export function getStackPath() {
