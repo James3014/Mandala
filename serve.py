@@ -39,29 +39,35 @@ class LinusHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(FRONTEND_DIR), **kwargs)
 
     def do_GET(self) -> None:  # noqa: N802
-        if self.path.startswith(f"{API_PREFIX}/grids"):
-            self._handle_grids_get()
-            return
-        if self.path == f"{API_PREFIX}/export":
-            payload = service.export_state()
-            self._send_json(payload)
-            return
-        if self.path.startswith(f"{API_PREFIX}/segments/") and self.path.endswith("/log"):
-            segment_id = self.path.split("/")[-2]
-            payload = service.get_segment_log(segment_id)
-            self._send_json(payload)
-            return
-        super().do_GET()
+        try:
+            if self.path.startswith(f"{API_PREFIX}/grids"):
+                self._handle_grids_get()
+                return
+            if self.path == f"{API_PREFIX}/export":
+                payload = service.export_state()
+                self._send_json(payload)
+                return
+            if self.path.startswith(f"{API_PREFIX}/segments/") and self.path.endswith("/log"):
+                segment_id = self.path.split("/")[-2]
+                payload = service.get_segment_log(segment_id)
+                self._send_json(payload)
+                return
+            super().do_GET()
+        except Exception as e:
+            self._send_json({"error": str(e)}, status=500)
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path == f"{API_PREFIX}/segments":
-            length = int(self.headers.get("Content-Length", "0"))
-            body = self.rfile.read(length)
-            payload = json.loads(body or "{}")
-            response = service.post_segments(payload)
-            self._send_json(response)
-            return
-        super().do_POST()
+        try:
+            if self.path == f"{API_PREFIX}/segments":
+                length = int(self.headers.get("Content-Length", "0"))
+                body = self.rfile.read(length)
+                payload = json.loads(body or "{}")
+                response = service.post_segments(payload)
+                self._send_json(response)
+                return
+            super().do_POST()
+        except Exception as e:
+            self._send_json({"error": str(e)}, status=500)
 
     def _handle_grids_get(self) -> None:
         parts = self.path.split("/")
