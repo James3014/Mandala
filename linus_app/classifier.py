@@ -172,12 +172,3 @@ class GeminiClassifier(BaseClassifier):
                 continue
 
         return assignments
-
-
-def build_classifier() -> tuple[BaseClassifier, BaseClassifier]:
-    fallback = RuleBasedClassifier()
-    api_key = os.getenv("GEMINI_API_KEY")
-    if api_key:
-        model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-        return GeminiClassifier(api_key, model), fallback
-    return fallback, fallback

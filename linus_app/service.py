@@ -9,7 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
 
-from .classifier import ClassificationError, build_classifier
+from .classifier import ClassificationError
+from .classifier_factory import build_classifier
 from .config import GRID_DEFINITIONS
 from .integrator import GridIntegrator
 from .mandala_blueprint import get_mandala
