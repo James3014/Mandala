@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Mandala</title>
+</head>
+<body>
+  <h1>Debug Info</h1>
+  <div id="status">Loading...</div>
+  <div id="gridBoard"></div>
+  
+  <script type="module">
+    import { getState } from './store.js';
+    import { loadGrids } from './modules/data.js';
+    
+    const status = document.getElementById('status');
+    const gridBoard = document.getElementById('gridBoard');
+    
+    async function test() {
+      try {
+        status.textContent = 'Step 1: Loading grids...';
+        await loadGrids();
+        
+        status.textContent = 'Step 2: Getting state...';
+        const state = getState();
+        
+        status.textContent = `Step 3: Found ${state.grids.length} grids`;
+        
+        if (state.grids.length > 0) {
+          gridBoard.innerHTML = '<h2>✅ Grids loaded successfully!</h2><pre>' + 
+            JSON.stringify(state.grids[0], null, 2).substring(0, 500) + 
+            '</pre>';
+        } else {
+          gridBoard.innerHTML = '<h2>❌ No grids found</h2>';
+        }
+      } catch (e) {
+        status.textContent = '❌ Error: ' + e.message;
+        gridBoard.innerHTML = '<pre>' + e.stack + '</pre>';
+      }
+    }
+    
+    test();
+  </script>
+</body>
+</html>
