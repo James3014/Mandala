@@ -129,20 +129,39 @@ class GeminiClassifier(BaseClassifier):
             "safetySettings": [],
             "generationConfig": {"temperature": 0.1, "topP": 0.9, "topK": 32},
         }
+        
+        data = self._call_gemini_with_retry(payload)
+        return self._parse_response(data)
+
+    def _call_gemini_with_retry(self, payload: dict, max_retries: int = 3) -> dict:
         params = {"key": self._api_key}
         data_bytes = json.dumps(payload).encode("utf-8")
         url = f"{self.BASE_URL.format(model=self._model)}?{parse.urlencode(params)}"
         req = request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"})
-        try:
-            with request.urlopen(req, timeout=20) as resp:
-                data = json.load(resp)
-        except Exception as exc:  # pragma: no cover
-            raise ClassificationError(str(exc)) from exc
+        
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                with request.urlopen(req, timeout=20) as resp:
+                    return json.load(resp)
+            except error.HTTPError as exc:
+                last_error = exc
+                if exc.code >= 500 and attempt < max_retries - 1:
+                    continue  # Retry on server errors
+                raise ClassificationError(f"Gemini HTTP {exc.code}") from exc
+            except Exception as exc:
+                last_error = exc
+                if attempt < max_retries - 1:
+                    continue
+                raise ClassificationError(str(exc)) from exc
+        
+        raise ClassificationError(f"Max retries exceeded: {last_error}")
 
+    def _parse_response(self, data: dict) -> List[GridAssignment]:
         try:
             text_response = data["candidates"][0]["content"]["parts"][0]["text"]
             parsed = json.loads(text_response)
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:
             raise ClassificationError(f"Gemini response parsing error: {exc}") from exc
 
         assignments: List[GridAssignment] = []
