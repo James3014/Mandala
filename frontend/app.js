@@ -40,7 +40,16 @@ const DOM = {
   toastStack: document.getElementById("toastStack"),
   ingestResults: document.getElementById("ingestResults"),
   ingestTableBody: document.getElementById("ingestTableBody"),
+  loadingIndicator: document.getElementById("loadingIndicator"),
 };
+
+function showLoading() {
+  DOM.loadingIndicator?.classList.remove("hidden");
+}
+
+function hideLoading() {
+  DOM.loadingIndicator?.classList.add("hidden");
+}
 
 const handleNavigate = (targetGridId) => {
   NavigationModule.drillDown(targetGridId);
@@ -57,9 +66,14 @@ const MandalaModule = {
 
 async function init() {
   console.log("[init] 開始初始化");
-  await loadGrids();
-  console.log("[init] loadGrids 完成，state.grids.length:", getState().grids.length);
-  populateGridFilter();
+  showLoading();
+  try {
+    await loadGrids();
+    console.log("[init] loadGrids 完成，state.grids.length:", getState().grids.length);
+    populateGridFilter();
+  } finally {
+    hideLoading();
+  }
 
   // Event Listeners
   DOM.viewModeInputs.forEach((input) =>
