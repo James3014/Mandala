@@ -31,6 +31,7 @@ const backButtonEl = document.getElementById("backButton");
 const breadcrumbEl = document.getElementById("mandalaBreadcrumb");
 const viewModeInputs = document.querySelectorAll('input[name="viewMode"]');
 const segmentFormEl = document.getElementById("segmentForm");
+const segmentFormSectionEl = document.querySelector(".segment-form");
 const segmentSourceInput = document.getElementById("segmentSource");
 const segmentTextInput = document.getElementById("segmentText");
 const segmentStatusEl = document.getElementById("segmentStatus");
@@ -111,6 +112,7 @@ function render() {
     gridBoardEl.classList.remove("hidden");
     overviewBoardEl.classList.add("hidden");
     detailPanelEl.classList.remove("hidden");
+    segmentFormSectionEl.classList.remove("hidden");
     backButtonEl.disabled =
       state.currentGridId === ROOT_GRID_ID && state.mandalaStack.length === 0;
     MandalaModule.renderBoard();
@@ -121,6 +123,7 @@ function render() {
     gridBoardEl.classList.add("hidden");
     overviewBoardEl.classList.remove("hidden");
     detailPanelEl.classList.add("hidden");
+    segmentFormSectionEl.classList.add("hidden");
     backButtonEl.disabled = true;
     MandalaModule.renderOverview();
   }

@@ -12,6 +12,10 @@ body {
   flex-direction: column;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -171,20 +175,30 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 2rem;
-  max-width: 1800px;
+  gap: 0.75rem;
+  padding: 1rem;
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
 .mandala-big-cell {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  min-height: 200px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+}
+
+.mandala-big-cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .mandala-big-cell.center-cell {
@@ -196,62 +210,93 @@ body {
   align-items: center;
   text-align: center;
   padding: 2rem;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+}
+
+.mandala-big-cell.center-cell:hover {
+  transform: scale(1.02);
 }
 
 .mandala-big-cell.fresh {
   border: 2px solid #22c55e;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
 }
 
 .mandala-big-cell.has-review {
   border: 2px solid #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .big-cell-header {
   font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
   color: #0f172a;
   border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .center-cell .big-cell-header {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .big-cell-content {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #1f2937;
+  overflow: hidden;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.center-cell .big-cell-content {
   font-size: 0.95rem;
-  line-height: 1.6;
+  color: white;
 }
 
 .mini-grid-9 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 0.4rem;
+  gap: 0.3rem;
   flex: 1;
+  margin-top: 0.3rem;
 }
 
 .mini-grid-9 .mini-cell {
   background: #f8fafc;
-  border-radius: 6px;
-  padding: 0.5rem;
-  font-size: 0.75rem;
+  border-radius: 4px;
+  padding: 0.3rem;
+  font-size: 0.65rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  min-height: 50px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
+  transition: all 0.2s;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+}
+
+.mini-grid-9 .mini-cell:hover {
+  background: #e2e8f0;
+  transform: scale(1.05);
+  border-color: #94a3b8;
 }
 
 .mini-grid-9 .mini-cell.center {
   background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .mini-grid-9 .mini-cell.empty {
@@ -260,27 +305,31 @@ body {
 }
 
 .mini-title {
-  font-weight: 500;
+  font-weight: 600;
   color: #0f172a;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 @media (max-width: 1400px) {
   .full-mandala-grid {
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .mandala-big-cell {
-    min-height: 150px;
+    gap: 0.5rem;
     padding: 0.75rem;
   }
-  
+
+  .mandala-big-cell {
+    padding: 0.6rem;
+  }
+
   .mini-grid-9 .mini-cell {
-    min-height: 40px;
-    padding: 0.35rem;
+    padding: 0.4rem;
     font-size: 0.7rem;
   }
 }
+
 .toast {
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
@@ -342,16 +391,27 @@ body {
   padding: 1.5rem 2rem;
   gap: 1.5rem;
   flex: 1;
+  min-height: 0;
 }
 
 .app-body.overview-mode {
   grid-template-columns: 1fr;
+  padding: 0;
+  min-height: 0;
 }
 
 .mandala-column {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+.mandala-column .grid-board.overview {
+  flex: 1;
+  min-height: 0;
 }
 
 .mandala-controls {
@@ -398,13 +458,16 @@ body {
 /* Responsive Grid Board */
 .grid-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(80px, 1fr));
-  grid-template-rows: repeat(3, minmax(80px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.75rem;
   width: 100%;
-  max-width: 600px;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
+}
+
+.grid-board.overview {
+  aspect-ratio: auto;
 }
 
 .grid-card {
@@ -418,8 +481,7 @@ body {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   border: 2px solid transparent;
   overflow: hidden;
-  min-height: 0;
-  /* Allow shrinking */
+  aspect-ratio: 1 / 1;
 }
 
 .grid-card.slot-5 {
