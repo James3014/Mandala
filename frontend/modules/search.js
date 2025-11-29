@@ -1,4 +1,4 @@
-import { state, setSearchResults } from "../store.js";
+import { getState, setSearchResults } from "../store.js";
 import { renderSearchResults } from "../renderSearch.js";
 
 export const SearchModule = {
@@ -7,7 +7,7 @@ export const SearchModule = {
         const gridFilter = gridFilterEl.value;
         const statusFilter = statusFilterEl.value;
 
-        const allEntries = state.grids.flatMap((grid) =>
+        const allEntries = getState().grids.flatMap((grid) =>
             grid.entries.map((entry) => ({
                 ...entry,
                 gridId: grid.gridId,
